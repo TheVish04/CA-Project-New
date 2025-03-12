@@ -8,8 +8,8 @@ const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-require('dotenv').config(); // Load environment variables from .env file
-const bcrypt = require('bcrypt'); // Add bcrypt for password hashing (install with `npm install bcrypt`)
+require('dotenv').config();
+const bcrypt = require('bcrypt');
 
 const app = express();
 
@@ -21,7 +21,7 @@ if (!fs.existsSync(dbFolder)) {
 }
 
 // Middleware
-app.use(express.json({ limit: '10mb' })); // Increased limit for larger payloads, adjustable as needed
+app.use(express.json({ limit: '10mb' }));
 
 // Enhanced CORS configuration
 const corsOptions = {
@@ -37,8 +37,8 @@ const corsOptions = {
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, // Allow cookies or authorization headers
-  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
+  credentials: true,
+  optionsSuccessStatus: 200,
 };
 app.use(cors(corsOptions));
 
@@ -92,16 +92,29 @@ const initializeDatabase = async () => {
     // Check if an admin user exists, create one if not
     const adminCount = await User.count({ where: { role: 'admin' } });
     if (adminCount === 0) {
-      const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10); // Use .env password with fallback
+      const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       const defaultAdmin = await User.create({
-        username: process.env.ADMIN_USERNAME || 'admin',
-        password: hashedPassword || 'admin123', // Use hashed password
-        email: process.env.ADMIN_EMAIL || 'admin@example.com',
+        username: adminUsername,
+        email: adminEmail,
+        password: hashedPassword,
         role: 'admin',
       });
-      console.log('Default admin created:', defaultAdmin.username);
+      console.log('Default admin created:', {
+        username: defaultAdmin.username,
+        email: defaultAdmin.email,
+        password: adminPassword, // Log the plaintext password for debugging (remove in production)
+      });
     } else {
       console.log('Admin user already exists, skipping creation.');
+      const existingAdmin = await User.findOne({ where: { role: 'admin' } });
+      console.log('Existing admin details:', {
+        username: existingAdmin.username,
+        email: existingAdmin.email,
+        passwordHash: existingAdmin.password, // Log the hashed password for debugging
+      });
     }
 
     // Log total number of questions for debugging
@@ -112,7 +125,7 @@ const initializeDatabase = async () => {
       message: err.message,
       stack: err.stack,
     });
-    throw err; // Rethrow to stop server if database initialization fails
+    throw err;
   }
 };
 
@@ -129,7 +142,7 @@ initializeDatabase()
       message: err.message,
       stack: err.stack,
     });
-    process.exit(1); // Exit with failure code
+    process.exit(1);
   });
 
-module.exports = app; // Export app for testing if needed
+module.exports = app;

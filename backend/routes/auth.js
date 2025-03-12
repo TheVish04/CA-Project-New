@@ -1,49 +1,48 @@
 const express = require('express');
 const router = express.Router();
+const { User } = require('../models');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+require('dotenv').config();
 
-// Register a new user
-router.post('/register', async (req, res) => {
-  const { email, password, role } = req.body;
-  try {
-    // Check if user already exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return res.status(400).json({ error: 'User already exists' });
-    }
-    // Create new user (password is hashed by the model)
-    const user = await User.create({ email, password, role: role || 'user' });
-    res.status(201).json({ message: 'User created', userId: user.id });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Login a user
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
   try {
-    // Find user by email
-    const user = await User.findOne({ where: { email } });
+    const { username, email, password } = req.body;
+
+    // Find user by username or email
+    const user = await User.findOne({
+      where: {
+        [Sequelize.Op.or]: [
+          { username: username || '' },
+          { email: email || '' },
+        ],
+      },
+    });
+
     if (!user) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      console.log('User not found:', { username, email });
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-    // Check password
+
+    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      console.log('Password mismatch for user:', user.username);
+      return res.status(401).json({ error: 'Invalid credentials' });
     }
-    // Generate JWT token
+
+    // Generate JWT
     const token = jwt.sign(
-      { id: user.id, role: user.role },
-      'your-secret-key', // Replace this with a secure key later
-      { expiresIn: '1h' }
+      { id: user.id, role: user.role, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
     );
+
+    console.log('Login successful for user:', user.username);
     res.json({ token });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Failed to login' });
   }
 });
 
