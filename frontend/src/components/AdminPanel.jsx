@@ -29,7 +29,7 @@ const AdminPanel = () => {
     questionNumber: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSubmittedId, setLastSubmittedId] = useState(null); // Track the last submitted question ID
+  const [lastSubmittedId, setLastSubmittedId] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -47,20 +47,24 @@ const AdminPanel = () => {
           'Authorization': `Bearer ${token}`,
         },
       });
+      const data = await response.json();
+      console.log('Fetch response status:', response.status);
+      console.log('Fetch response data:', data);
       if (response.ok) {
-        const questions = await response.json();
+        const questions = Array.isArray(data) ? data : [data];
         console.log('Fetched questions with all fields:', questions);
         setStoredQuestions(questions);
-        // Reset form only after fetching the new question
         if (lastSubmittedId && questions.some(q => q.id === lastSubmittedId)) {
           resetForm();
-          setLastSubmittedId(null); // Clear the last submitted ID
+          setLastSubmittedId(null);
         }
       } else {
-        console.error('Failed to fetch questions:', response.statusText);
+        console.error('Failed to fetch questions:', response.statusText, data);
+        alert(`Failed to fetch questions: ${response.statusText} - ${data.error || 'Unknown error'}`);
       }
     } catch (error) {
       console.error('Error fetching questions:', error);
+      alert(`Error fetching questions: ${error.message}`);
     }
   };
 
@@ -71,12 +75,7 @@ const AdminPanel = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`handleChange - ${name}: ${value}`);
-    setFormData((prev) => {
-      const updated = { ...prev, [name]: value };
-      console.log(`Updated formData for ${name}:`, updated);
-      return updated;
-    });
+    setFormData((prev) => ({ ...prev, [name]: value }));
     validateField(name, value);
   };
 
@@ -104,51 +103,41 @@ const AdminPanel = () => {
 
   const handleSubQuestionChange = (index, e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const updated = [...prev.subQuestions];
-      updated[index][name] = value;
-      return { ...prev, subQuestions: updated };
-    });
+    const updated = [...formData.subQuestions];
+    updated[index][name] = value;
+    setFormData((prev) => ({ ...prev, subQuestions: updated }));
     validateSubQuestion(index, name, value);
   };
 
   const addSubOption = (subIndex) => {
-    setFormData((prev) => {
-      const updated = [...prev.subQuestions];
-      updated[subIndex].subOptions.push({ optionText: '', isCorrect: false });
-      return { ...prev, subQuestions: updated };
-    });
+    const updated = [...formData.subQuestions];
+    updated[subIndex].subOptions.push({ optionText: '', isCorrect: false });
+    setFormData((prev) => ({ ...prev, subQuestions: updated }));
   };
 
   const removeSubOption = (subIndex, optionIndex) => {
-    setFormData((prev) => {
-      const updated = [...prev.subQuestions];
-      if (updated[subIndex].subOptions.length > 1) {
-        updated[subIndex].subOptions = updated[subIndex].subOptions.filter((_, i) => i !== optionIndex);
-      }
-      return { ...prev, subQuestions: updated };
-    });
+    const updated = [...formData.subQuestions];
+    if (updated[subIndex].subOptions.length > 1) {
+      updated[subIndex].subOptions = updated[subIndex].subOptions.filter((_, i) => i !== optionIndex);
+    }
+    setFormData((prev) => ({ ...prev, subQuestions: updated }));
   };
 
   const handleSubOptionChange = (subIndex, optionIndex, e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      const updated = [...prev.subQuestions];
-      updated[subIndex].subOptions[optionIndex][name] = value;
-      return { ...prev, subQuestions: updated };
-    });
+    const updated = [...formData.subQuestions];
+    updated[subIndex].subOptions[optionIndex][name] = value;
+    setFormData((prev) => ({ ...prev, subQuestions: updated }));
     validateSubOption(subIndex, optionIndex, name, value);
   };
 
   const markCorrectSubOption = (subIndex, optionIndex) => {
-    setFormData((prev) => {
-      const updated = [...prev.subQuestions];
-      updated[subIndex].subOptions = updated[subIndex].subOptions.map((opt, i) => ({
-        ...opt,
-        isCorrect: i === optionIndex,
-      }));
-      return { ...prev, subQuestions: updated };
-    });
+    const updated = [...formData.subQuestions];
+    updated[subIndex].subOptions = updated[subIndex].subOptions.map((opt, i) => ({
+      ...opt,
+      isCorrect: i === optionIndex,
+    }));
+    setFormData((prev) => ({ ...prev, subQuestions: updated }));
   };
 
   const handlePreview = () => {
@@ -158,7 +147,6 @@ const AdminPanel = () => {
       alert('Please fix the validation errors before previewing.');
     } else {
       setPreviewVisible(true);
-      console.log('Preview data:', formData);
     }
   };
 
@@ -170,123 +158,79 @@ const AdminPanel = () => {
     let error = '';
     switch (name) {
       case 'subject':
-        if (!value || value === '') {
-          error = 'Subject is required';
-        }
+        if (!value || value === '') error = 'Subject is required';
         break;
       case 'examType':
-        if (!value || value === '') {
-          error = 'Exam Type is required';
-        }
+        if (!value || value === '') error = 'Exam Type is required';
         break;
       case 'year':
-        if (!value || value === '') {
-          error = 'Year is required';
-        }
+        if (!value || value === '') error = 'Year is required';
         break;
       case 'month':
-        if (!value || value === '') {
-          error = 'Month is required';
-        }
+        if (!value || value === '') error = 'Month is required';
         break;
       case 'group':
-        if (!value || value === '' || value === 'Select Group') {
-          error = 'Group is required';
-        }
+        if (!value || value === '' || value === 'Select Group') error = 'Group is required';
         break;
       case 'paperName':
-        if (!value || value === '' || value === 'Select Paper') {
-          error = 'Paper Name is required';
-        }
+        if (!value || value === '' || value === 'Select Paper') error = 'Paper Name is required';
         break;
       case 'questionNumber':
-        if (!value) {
-          error = 'Question Number is required';
-        }
+        if (!value) error = 'Question Number is required';
         break;
       case 'pageNumber':
-        if (!value) {
-          error = 'Page Number is required';
-        }
+        if (!value) error = 'Page Number is required';
         break;
       case 'questionText':
-        if (!value) {
-          error = 'Question text is required';
-        }
+        if (!value) error = 'Question text is required';
         break;
       default:
         break;
     }
-    setErrors((prev) => {
-      const updatedErrors = { ...prev, [name]: error };
-      if (!error) delete updatedErrors[name];
-      return updatedErrors;
-    });
+    setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
   const validateSubQuestion = (index, name, value) => {
-    let error = '';
-    if (name === 'subQuestionText' && !value.trim()) {
-      error = `Sub-question ${index + 1} text is required`;
-    }
-    setErrors((prev) => {
-      const updatedErrors = { ...prev, [`subQuestion_${index}`]: error };
-      if (!error) delete updatedErrors[`subQuestion_${index}`];
-      return updatedErrors;
-    });
+    let error = name === 'subQuestionText' && !value.trim() ? `Sub-question ${index + 1} text is required` : '';
+    setErrors((prev) => ({ ...prev, [`subQuestion_${index}`]: error }));
   };
 
   const validateSubOption = (subIndex, optionIndex, name, value) => {
-    let error = '';
-    if (name === 'optionText' && !value.trim()) {
-      error = `Sub-question ${subIndex + 1}, Option ${optionIndex + 1} text is required`;
-    }
-    setErrors((prev) => {
-      const updatedErrors = { ...prev, [`subOption_${subIndex}_${optionIndex}`]: error };
-      if (!error) delete updatedErrors[`subOption_${subIndex}_${optionIndex}`];
-      return updatedErrors;
-    });
+    let error = name === 'optionText' && !value.trim() ? `Sub-question ${subIndex + 1}, Option ${optionIndex + 1} text is required` : '';
+    setErrors((prev) => ({ ...prev, [`subOption_${subIndex}_${optionIndex}`]: error }));
   };
 
   const validateForm = () => {
     const newErrors = {};
-    Object.keys(formData).forEach((key) => {
-      if (key !== 'answerText' && key !== 'subQuestions') {
-        validateField(key, formData[key]);
-        if (errors[key]) {
-          newErrors[key] = errors[key];
-        }
-      }
+    ['subject', 'examType', 'year', 'month', 'group', 'paperName', 'questionNumber', 'questionText', 'pageNumber'].forEach((field) => {
+      validateField(field, formData[field]);
+      if (errors[field]) newErrors[field] = errors[field];
     });
+
     formData.subQuestions.forEach((subQ, index) => {
       validateSubQuestion(index, 'subQuestionText', subQ.subQuestionText);
-      if (errors[`subQuestion_${index}`]) {
-        newErrors[`subQuestion_${index}`] = errors[`subQuestion_${index}`];
-      }
+      if (errors[`subQuestion_${index}`]) newErrors[`subQuestion_${index}`] = errors[`subQuestion_${index}`];
       subQ.subOptions.forEach((opt, optIndex) => {
         validateSubOption(index, optIndex, 'optionText', opt.optionText);
-        if (errors[`subOption_${index}_${optIndex}`]) {
-          newErrors[`subOption_${index}_${optIndex}`] = errors[`subOption_${index}_${optIndex}`];
-        }
+        if (errors[`subOption_${index}_${optIndex}`]) newErrors[`subOption_${index}_${optIndex}`] = errors[`subOption_${index}_${optIndex}`];
       });
     });
-    console.log('Validation errors:', newErrors);
+
     return newErrors;
   };
 
   const cleanSubQuestions = (subQuestions) => {
-    return subQuestions.map(subQ => ({
+    return subQuestions.map((subQ) => ({
       subQuestionNumber: subQ.subQuestionNumber || '',
-      subQuestionText: subQ.subQuestionText || '', // Preserve even if empty
-      subOptions: subQ.subOptions.map(opt => ({
-        optionText: opt.optionText || '', // Preserve even if empty
+      subQuestionText: subQ.subQuestionText || '',
+      subOptions: subQ.subOptions.map((opt) => ({
+        optionText: opt.optionText || '',
         isCorrect: !!opt.isCorrect,
       })),
     }));
   };
 
   const resetForm = () => {
-    console.log('Resetting form');
     setFormData({
       subject: '',
       examType: '',
@@ -301,6 +245,7 @@ const AdminPanel = () => {
       subQuestions: [],
     });
     setErrors({});
+    setEditingQuestionId(null);
   };
 
   const handleSubmit = async (e) => {
@@ -315,64 +260,38 @@ const AdminPanel = () => {
     setIsSubmitting(true);
     const token = localStorage.getItem('token');
 
-    // Normalize and set default values for all required fields
-    const normalizedSubject = formData.subject
-      ? formData.subject
-          .split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ')
-      : 'Advanced Accounting';
-    const normalizedExamType = formData.examType || 'MTP';
-    const normalizedYear = formData.year || '2024';
-    const normalizedMonth = formData.month || 'March';
-    const normalizedGroup = formData.group || 'Group I';
-    const normalizedPaperName = formData.paperName || 'Paper 01';
-
     const sanitizedData = {
-      subject: normalizedSubject,
-      examType: normalizedExamType,
-      year: normalizedYear,
-      month: normalizedMonth,
-      group: normalizedGroup,
-      paperName: normalizedPaperName,
-      questionNumber: formData.questionNumber || '1',
-      questionText: DOMPurify.sanitize(formData.questionText || 'Default question text'),
-      answerText: DOMPurify.sanitize(formData.answerText || ''), // Ensure answerText is sent
-      pageNumber: formData.pageNumber || '1', // Use formData value directly
-      subQuestions: cleanSubQuestions(formData.subQuestions), // Updated to preserve empty values
+      subject: formData.subject,
+      examType: formData.examType,
+      year: formData.year,
+      month: formData.month,
+      group: formData.group,
+      paperName: formData.paperName,
+      questionNumber: formData.questionNumber,
+      questionText: DOMPurify.sanitize(formData.questionText),
+      answerText: DOMPurify.sanitize(formData.answerText || ''),
+      pageNumber: formData.pageNumber,
+      subQuestions: cleanSubQuestions(formData.subQuestions),
     };
 
-    console.log('Form Data before sanitization:', formData);
-    console.log('Normalized Data:', sanitizedData);
-
-    const formDataToSend = new FormData();
-    Object.keys(sanitizedData).forEach((key) => {
-      if (key === 'subQuestions') {
-        formDataToSend.append(key, JSON.stringify(sanitizedData[key]));
-      } else {
-        formDataToSend.append(key, sanitizedData[key]);
-      }
-    });
-
-    // Debug FormData
-    for (let [key, value] of formDataToSend.entries()) {
-      console.log(`FormData Entry - ${key}: ${value}`);
-    }
-    console.log('Final FormData before fetch:', Object.fromEntries(formDataToSend.entries()));
+    console.log('Form Data before submission:', formData);
+    console.log('Sanitized Data:', sanitizedData);
 
     try {
       const response = await fetch('http://localhost:5000/api/questions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formDataToSend,
+        body: JSON.stringify(sanitizedData),
       });
       const result = await response.json();
+      console.log('Submission response:', response.status, result);
       if (response.ok) {
-        const newQuestionId = result.id; // Assuming the response includes the new question ID
-        setLastSubmittedId(newQuestionId); // Set the last submitted ID
-        applyFilters(token); // Fetch updated questions
+        setLastSubmittedId(result.id);
+        applyFilters(token);
+        alert('Question added successfully');
       } else {
         alert(`Failed to add question: ${result.error || 'Unknown error'}`);
       }
@@ -396,33 +315,34 @@ const AdminPanel = () => {
     setIsSubmitting(true);
     const token = localStorage.getItem('token');
     const sanitizedData = {
-      ...formData,
+      subject: formData.subject,
+      examType: formData.examType,
+      year: formData.year,
+      month: formData.month,
+      group: formData.group,
+      paperName: formData.paperName,
+      questionNumber: formData.questionNumber,
       questionText: DOMPurify.sanitize(formData.questionText),
-      answerText: DOMPurify.sanitize(formData.answerText || ''), // Ensure answerText is sent
-      subQuestions: cleanSubQuestions(formData.subQuestions), // Updated to preserve empty values
+      answerText: DOMPurify.sanitize(formData.answerText || ''),
+      pageNumber: formData.pageNumber,
+      subQuestions: cleanSubQuestions(formData.subQuestions),
     };
-
-    const formDataToSend = new FormData();
-    Object.keys(sanitizedData).forEach((key) => {
-      if (key === 'subQuestions') {
-        formDataToSend.append(key, JSON.stringify(sanitizedData[key]));
-      } else {
-        formDataToSend.append(key, sanitizedData[key] || '');
-      }
-    });
 
     try {
       const response = await fetch(`http://localhost:5000/api/questions/${editingQuestionId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
-        body: formDataToSend,
+        body: JSON.stringify(sanitizedData),
       });
       const result = await response.json();
+      console.log('Update response:', response.status, result);
       if (response.ok) {
-        setLastSubmittedId(editingQuestionId); // Set the last updated ID
-        applyFilters(token); // Fetch updated questions
+        setLastSubmittedId(editingQuestionId);
+        applyFilters(token);
+        alert('Question updated successfully');
       } else {
         alert(`Failed to update question: ${result.error || 'Unknown error'}`);
       }
@@ -435,7 +355,6 @@ const AdminPanel = () => {
   };
 
   const handleEdit = (question) => {
-    console.log('Editing question:', question);
     setFormData({
       subject: question.subject || '',
       examType: question.examType || '',
@@ -445,15 +364,15 @@ const AdminPanel = () => {
       paperName: question.paperName || '',
       questionNumber: question.questionNumber || '',
       questionText: question.questionText || '',
-      answerText: question.answerText || '', // Ensure answerText is set
-      pageNumber: question.pageNumber || '', // Use fetched value
+      answerText: question.answerText || '',
+      pageNumber: question.pageNumber || '',
       subQuestions: question.subQuestions ? [...question.subQuestions] : [],
     });
     setEditingQuestionId(question.id);
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
 
     const token = localStorage.getItem('token');
     try {
@@ -465,8 +384,8 @@ const AdminPanel = () => {
       });
       const result = await response.json();
       if (response.ok) {
-        alert('Question deleted successfully');
         applyFilters(token);
+        alert('Question deleted successfully');
       } else {
         alert(`Failed to delete question: ${result.error || 'Unknown error'}`);
       }
@@ -474,27 +393,6 @@ const AdminPanel = () => {
       console.error('Error deleting question:', error);
       alert(`Error deleting question: ${error.message}`);
     }
-  };
-
-  const validateFormWithDefaults = (data) => {
-    const newErrors = {};
-    const requiredFields = ['subject', 'examType', 'year', 'month', 'group', 'paperName', 'questionNumber', 'questionText', 'pageNumber'];
-    requiredFields.forEach((field) => {
-      if (!data[field] || data[field] === '') {
-        newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
-      }
-    });
-    data.subQuestions.forEach((subQ, index) => {
-      if (!subQ.subQuestionText.trim()) {
-        newErrors[`subQuestion_${index}`] = `Sub-question ${index + 1} text is required`;
-      }
-      subQ.subOptions.forEach((opt, optIndex) => {
-        if (!opt.optionText.trim()) {
-          newErrors[`subOption_${index}_${optIndex}`] = `Sub-question ${index + 1}, Option ${optIndex + 1} text is required`;
-        }
-      });
-    });
-    return newErrors;
   };
 
   const visibleErrors = Object.values(errors).filter((error) => error);
@@ -715,7 +613,9 @@ const AdminPanel = () => {
                   onChange={(e) => handleSubQuestionChange(subIndex, e)}
                   className="w-full p-2 border rounded"
                 />
-                {errors[`subQuestion_${subIndex}`] && <p className="text-red-500 text-sm">{errors[`subQuestion_${subIndex}`]}</p>}
+                {errors[`subQuestion_${subIndex}`] && (
+                  <p className="text-red-500 text-sm">{errors[`subQuestion_${subIndex}`]}</p>
+                )}
               </label>
               <fieldset className="border p-4 rounded mt-2">
                 <legend className="text-md font-semibold">Sub-Question Options</legend>
@@ -727,7 +627,7 @@ const AdminPanel = () => {
                         type="text"
                         name="optionText"
                         value={subOpt.optionText}
-                        onChange={(evt) => handleSubOptionChange(subIndex, optIndex, evt)}
+                        onChange={(e) => handleSubOptionChange(subIndex, optIndex, e)}
                         className="w-full p-2 border rounded"
                       />
                     </label>
@@ -745,7 +645,9 @@ const AdminPanel = () => {
                     >
                       Remove Option
                     </button>
-                    {errors[`subOption_${subIndex}_${optIndex}`] && <p className="text-red-500 text-sm">{errors[`subOption_${subIndex}_${optIndex}`]}</p>}
+                    {errors[`subOption_${subIndex}_${optIndex}`] && (
+                      <p className="text-red-500 text-sm">{errors[`subOption_${subIndex}_${optIndex}`]}</p>
+                    )}
                   </div>
                 ))}
                 <button
@@ -788,7 +690,7 @@ const AdminPanel = () => {
             className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Submitting...' : (editingQuestionId ? 'Update' : 'Submit')}
+            {isSubmitting ? 'Submitting...' : editingQuestionId ? 'Update' : 'Submit'}
           </button>
           {editingQuestionId && (
             <button
@@ -855,10 +757,7 @@ const AdminPanel = () => {
         ) : (
           <div className="space-y-6">
             {storedQuestions.map((question) => (
-              <div
-                key={question.id}
-                className="border border-gray-200 p-4 rounded-lg shadow-md"
-              >
+              <div key={question.id} className="border border-gray-200 p-4 rounded-lg shadow-md">
                 <p><strong>Subject:</strong> {question.subject || 'N/A'}</p>
                 <p><strong>Exam Type:</strong> {question.examType || 'N/A'}</p>
                 <p><strong>Year:</strong> {question.year || 'N/A'}</p>

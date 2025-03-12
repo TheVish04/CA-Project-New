@@ -6,9 +6,10 @@ const authRoutes = require('./routes/auth');
 const questionRoutes = require('./routes/questions');
 const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware');
 const cors = require('cors');
-const path = require('path'); // Added missing import
-const fs = require('fs'); // Added for database folder creation
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config(); // Load environment variables from .env file
+const bcrypt = require('bcrypt'); // Add bcrypt for password hashing (install with `npm install bcrypt`)
 
 const app = express();
 
@@ -20,14 +21,24 @@ if (!fs.existsSync(dbFolder)) {
 }
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increased limit for larger payloads, adjustable as needed
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173', // Use environment variable or default
+  origin: (origin, callback) => {
+    const allowedOrigins = process.env.CORS_ORIGIN
+      ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+      : ['http://localhost:5173'];
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, // Allow cookies or authorization headers if needed
+  credentials: true, // Allow cookies or authorization headers
+  optionsSuccessStatus: 200, // Some legacy browsers choke on 204
 };
 app.use(cors(corsOptions));
 
@@ -39,25 +50,39 @@ app.use('/api/questions', questionRoutes);
 
 // Example protected admin route
 app.get('/api/admin', authMiddleware, adminMiddleware, (req, res) => {
-  res.json({ message: 'Welcome to the admin panel' });
+  res.json({ message: 'Welcome to the admin panel', user: req.user.username });
 });
 
-// Health check endpoint
+// Health check endpoint with detailed status
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
+  const health = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    dbConnected: sequelize.connectionManager.hasActiveConnection(),
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
+  };
+  res.status(200).json(health);
 });
 
 // Global error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Global error:', err.stack);
-  res.status(500).json({ error: 'Something went wrong!', message: err.message });
+  console.error('Global error:', {
+    stack: err.stack,
+    message: err.message,
+    status: err.status || 500,
+  });
+  res.status(err.status || 500).json({
+    error: 'Something went wrong!',
+    message: err.message || 'Internal server error',
+  });
 });
 
 // Initialize database and create default admin if none exists
 const initializeDatabase = async () => {
   try {
-    // Sync database without dropping tables
-    await sequelize.sync({ force: false });
+    // Sync database without dropping tables, with logging
+    await sequelize.sync({ force: false, logging: (msg) => console.log('Database sync:', msg) });
     console.log('Database synced successfully (force: false)');
 
     // Verify database connection by fetching table info
@@ -67,9 +92,10 @@ const initializeDatabase = async () => {
     // Check if an admin user exists, create one if not
     const adminCount = await User.count({ where: { role: 'admin' } });
     if (adminCount === 0) {
+      const hashedPassword = await bcrypt.hash('admin123', 10); // Hash password with salt rounds 10
       const defaultAdmin = await User.create({
         username: 'admin',
-        password: 'admin123', // In production, use a secure password and hash it
+        password: hashedPassword, // Use hashed password
         email: 'admin@example.com',
         role: 'admin',
       });
@@ -82,7 +108,10 @@ const initializeDatabase = async () => {
     const questionCount = await Question.count();
     console.log(`Total questions in database: ${questionCount}`);
   } catch (err) {
-    console.error('Error initializing database:', err);
+    console.error('Error initializing database:', {
+      message: err.message,
+      stack: err.stack,
+    });
     throw err; // Rethrow to stop server if database initialization fails
   }
 };
@@ -96,6 +125,11 @@ initializeDatabase()
     });
   })
   .catch((err) => {
-    console.error('Failed to start server due to database error:', err);
+    console.error('Failed to start server due to database error:', {
+      message: err.message,
+      stack: err.stack,
+    });
     process.exit(1); // Exit with failure code
   });
+
+module.exports = app; // Export app for testing if needed
