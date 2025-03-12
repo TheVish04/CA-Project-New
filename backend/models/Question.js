@@ -36,15 +36,15 @@ const Question = sequelize.define('Question', {
   },
   answerText: {
     type: DataTypes.TEXT,
-    allowNull: true,
+    allowNull: true, // Optional
   },
   pageNumber: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   subQuestions: {
-    type: DataTypes.JSON,
-    allowNull: true,
+    type: DataTypes.JSON, // Store as JSON to handle nested objects
+    allowNull: true, // Optional
   },
 }, {
   timestamps: true,

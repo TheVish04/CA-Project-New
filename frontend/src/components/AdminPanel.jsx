@@ -48,7 +48,7 @@ const AdminPanel = () => {
       });
       if (response.ok) {
         const questions = await response.json();
-        console.log('Fetched questions:', questions);
+        console.log('Fetched questions with all fields:', questions);
         setStoredQuestions(questions);
       } else {
         console.error('Failed to fetch questions:', response.statusText);
@@ -65,10 +65,10 @@ const AdminPanel = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    console.log(`handleChange - ${name}: ${value}`); // Debug log
+    console.log(`handleChange - ${name}: ${value}`);
     setFormData((prev) => {
       const updated = { ...prev, [name]: value };
-      console.log(`Updated formData for ${name}:`, updated); // Debug log
+      console.log(`Updated formData for ${name}:`, updated);
       return updated;
     });
     validateField(name, value);
@@ -269,18 +269,14 @@ const AdminPanel = () => {
   };
 
   const cleanSubQuestions = (subQuestions) => {
-    return subQuestions
-      .filter(subQ => subQ.subQuestionText.trim())
-      .map(subQ => ({
-        subQuestionNumber: subQ.subQuestionNumber || '',
-        subQuestionText: subQ.subQuestionText.trim(),
-        subOptions: subQ.subOptions
-          .filter(opt => opt.optionText.trim())
-          .map(opt => ({
-            optionText: opt.optionText.trim(),
-            isCorrect: !!opt.isCorrect,
-          })),
-      }));
+    return subQuestions.map(subQ => ({
+      subQuestionNumber: subQ.subQuestionNumber || '',
+      subQuestionText: subQ.subQuestionText || '', // Preserve even if empty
+      subOptions: subQ.subOptions.map(opt => ({
+        optionText: opt.optionText || '', // Preserve even if empty
+        isCorrect: !!opt.isCorrect,
+      })),
+    }));
   };
 
   const resetForm = () => {
@@ -313,46 +309,46 @@ const AdminPanel = () => {
     setIsSubmitting(true);
     const token = localStorage.getItem('token');
 
-    // Normalize subject and examType to match backend validation
+    // Normalize and set default values for all required fields
     const normalizedSubject = formData.subject
       ? formData.subject
           .split(' ')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ')
       : 'Advanced Accounting';
-    const normalizedExamType = formData.examType || 'MTP'; // Fallback to a valid value if empty
+    const normalizedExamType = formData.examType || 'MTP';
+    const normalizedYear = formData.year || '2024';
+    const normalizedMonth = formData.month || 'March';
+    const normalizedGroup = formData.group || 'Group I';
+    const normalizedPaperName = formData.paperName || 'Paper 01';
 
     const sanitizedData = {
-      ...formData,
       subject: normalizedSubject,
       examType: normalizedExamType,
-      questionText: DOMPurify.sanitize(formData.questionText),
-      answerText: DOMPurify.sanitize(formData.answerText),
-      subQuestions: cleanSubQuestions(formData.subQuestions),
+      year: normalizedYear,
+      month: normalizedMonth,
+      group: normalizedGroup,
+      paperName: normalizedPaperName,
+      questionNumber: formData.questionNumber || '1',
+      questionText: DOMPurify.sanitize(formData.questionText || 'Default question text'),
+      answerText: DOMPurify.sanitize(formData.answerText || ''), // Ensure answerText is sent
+      pageNumber: formData.pageNumber || '1',
+      subQuestions: cleanSubQuestions(formData.subQuestions), // Updated to preserve empty values
     };
 
     console.log('Form Data before sanitization:', formData);
-    console.log('Normalized Subject:', normalizedSubject);
-    console.log('Normalized ExamType:', normalizedExamType);
-    console.log('Sanitized Data:', sanitizedData);
-
-    if (!sanitizedData.subject || !sanitizedData.examType) {
-      console.error('Subject or ExamType is empty in sanitizedData!', sanitizedData);
-      setIsSubmitting(false);
-      alert('Subject and Exam Type are required.');
-      return;
-    }
+    console.log('Normalized Data:', sanitizedData);
 
     const formDataToSend = new FormData();
     Object.keys(sanitizedData).forEach((key) => {
       if (key === 'subQuestions') {
         formDataToSend.append(key, JSON.stringify(sanitizedData[key]));
       } else {
-        formDataToSend.append(key, sanitizedData[key] || '');
+        formDataToSend.append(key, sanitizedData[key]);
       }
     });
 
-    // Additional debug to inspect FormData
+    // Debug FormData
     for (let [key, value] of formDataToSend.entries()) {
       console.log(`FormData Entry - ${key}: ${value}`);
     }
@@ -396,8 +392,8 @@ const AdminPanel = () => {
     const sanitizedData = {
       ...formData,
       questionText: DOMPurify.sanitize(formData.questionText),
-      answerText: DOMPurify.sanitize(formData.answerText),
-      subQuestions: cleanSubQuestions(formData.subQuestions),
+      answerText: DOMPurify.sanitize(formData.answerText), // Ensure answerText is sent
+      subQuestions: cleanSubQuestions(formData.subQuestions), // Updated to preserve empty values
     };
 
     const formDataToSend = new FormData();
@@ -445,7 +441,7 @@ const AdminPanel = () => {
       paperName: question.paperName || '',
       questionNumber: question.questionNumber || '',
       questionText: question.questionText || '',
-      answerText: question.answerText || '',
+      answerText: question.answerText || '', // Ensure answerText is set
       pageNumber: question.pageNumber || '',
       subQuestions: question.subQuestions ? [...question.subQuestions] : [],
     });
@@ -474,6 +470,27 @@ const AdminPanel = () => {
       console.error('Error deleting question:', error);
       alert(`Error deleting question: ${error.message}`);
     }
+  };
+
+  const validateFormWithDefaults = (data) => {
+    const newErrors = {};
+    const requiredFields = ['subject', 'examType', 'year', 'month', 'group', 'paperName', 'questionNumber', 'questionText', 'pageNumber'];
+    requiredFields.forEach((field) => {
+      if (!data[field] || data[field] === '') {
+        newErrors[field] = `${field.charAt(0).toUpperCase() + field.slice(1)} is required`;
+      }
+    });
+    data.subQuestions.forEach((subQ, index) => {
+      if (!subQ.subQuestionText.trim()) {
+        newErrors[`subQuestion_${index}`] = `Sub-question ${index + 1} text is required`;
+      }
+      subQ.subOptions.forEach((opt, optIndex) => {
+        if (!opt.optionText.trim()) {
+          newErrors[`subOption_${index}_${optIndex}`] = `Sub-question ${index + 1}, Option ${optIndex + 1} text is required`;
+        }
+      });
+    });
+    return newErrors;
   };
 
   const visibleErrors = Object.values(errors).filter((error) => error);
@@ -859,7 +876,6 @@ const AdminPanel = () => {
                     />
                   </>
                 )}
-                <p><strong>Page Number:</strong> {question.pageNumber || 'N/A'}</p>
                 {question.subQuestions && question.subQuestions.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold mt-2">Sub-Questions:</h3>
@@ -881,6 +897,7 @@ const AdminPanel = () => {
                     ))}
                   </div>
                 )}
+                <p><strong>Page Number:</strong> {question.pageNumber || 'N/A'}</p>
                 <div className="mt-4 space-x-4">
                   <button
                     onClick={() => handleEdit(question)}

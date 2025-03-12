@@ -51,7 +51,7 @@ const questionSchema = Joi.object({
 // POST route (admin only)
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
-    console.log('Received question data (raw):', req.body); // Enhanced log
+    console.log('Received question data (raw):', req.body);
 
     const {
       subject,
@@ -75,6 +75,16 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
           .join(' ')
       : 'Advanced Accounting'; // Fallback to a valid default
 
+    // Ensure all required fields have fallbacks
+    const normalizedExamType = examType || 'MTP';
+    const normalizedYear = year || '2024';
+    const normalizedMonth = month || 'March';
+    const normalizedGroup = group || 'Group I';
+    const normalizedPaperName = paperName || 'Paper 01';
+    const normalizedQuestionNumber = questionNumber || '1';
+    const normalizedQuestionText = questionText || 'Default question text';
+    const normalizedPageNumber = pageNumber || '1';
+
     // Safely parse subQuestions (handle both string and array cases)
     let parsedSubQuestions = [];
     if (subQuestions) {
@@ -95,19 +105,19 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
     // Prepare data for validation
     const dataToValidate = {
       subject: normalizedSubject,
-      examType: examType || 'MTP', // Ensure examType has a fallback
-      year,
-      month,
-      group,
-      paperName,
-      questionNumber,
-      questionText,
-      answerText,
-      pageNumber,
+      examType: normalizedExamType,
+      year: normalizedYear,
+      month: normalizedMonth,
+      group: normalizedGroup,
+      paperName: normalizedPaperName,
+      questionNumber: normalizedQuestionNumber,
+      questionText: normalizedQuestionText,
+      answerText: answerText || '',
+      pageNumber: normalizedPageNumber,
       subQuestions: parsedSubQuestions,
     };
 
-    console.log('Data to validate:', dataToValidate); // Enhanced log
+    console.log('Data to validate:', dataToValidate);
 
     // Validate input
     const { error } = questionSchema.validate(dataToValidate);
@@ -118,15 +128,15 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const questionData = {
       subject: normalizedSubject,
-      examType: dataToValidate.examType, // Use validated examType
-      year,
-      month,
-      group,
-      paperName,
-      questionNumber,
-      questionText,
-      answerText,
-      pageNumber,
+      examType: normalizedExamType,
+      year: normalizedYear,
+      month: normalizedMonth,
+      group: normalizedGroup,
+      paperName: normalizedPaperName,
+      questionNumber: normalizedQuestionNumber,
+      questionText: normalizedQuestionText,
+      answerText: answerText || '',
+      pageNumber: normalizedPageNumber,
       subQuestions: parsedSubQuestions,
     };
 
@@ -193,6 +203,16 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
           .join(' ')
       : '';
 
+    // Ensure all required fields have fallbacks
+    const normalizedExamType = examType || 'MTP';
+    const normalizedYear = year || '2024';
+    const normalizedMonth = month || 'March';
+    const normalizedGroup = group || 'Group I';
+    const normalizedPaperName = paperName || 'Paper 01';
+    const normalizedQuestionNumber = questionNumber || '1';
+    const normalizedQuestionText = questionText || 'Default question text';
+    const normalizedPageNumber = pageNumber || '1';
+
     // Safely parse subQuestions (handle both string and array cases)
     let parsedSubQuestions = [];
     if (subQuestions) {
@@ -213,15 +233,15 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     // Prepare data for validation
     const dataToValidate = {
       subject: normalizedSubject,
-      examType: examType || 'MTP', // Ensure examType has a fallback
-      year,
-      month,
-      group,
-      paperName,
-      questionNumber,
-      questionText,
-      answerText,
-      pageNumber,
+      examType: normalizedExamType,
+      year: normalizedYear,
+      month: normalizedMonth,
+      group: normalizedGroup,
+      paperName: normalizedPaperName,
+      questionNumber: normalizedQuestionNumber,
+      questionText: normalizedQuestionText,
+      answerText: answerText || '',
+      pageNumber: normalizedPageNumber,
       subQuestions: parsedSubQuestions,
     };
 
@@ -236,15 +256,15 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const updatedData = {
       subject: normalizedSubject,
-      examType: dataToValidate.examType,
-      year,
-      month,
-      group,
-      paperName,
-      questionNumber,
-      questionText,
-      answerText,
-      pageNumber,
+      examType: normalizedExamType,
+      year: normalizedYear,
+      month: normalizedMonth,
+      group: normalizedGroup,
+      paperName: normalizedPaperName,
+      questionNumber: normalizedQuestionNumber,
+      questionText: normalizedQuestionText,
+      answerText: answerText || '',
+      pageNumber: normalizedPageNumber,
       subQuestions: parsedSubQuestions,
     };
 
