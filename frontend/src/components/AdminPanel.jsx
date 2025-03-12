@@ -53,8 +53,10 @@ const AdminPanel = () => {
       if (response.ok) {
         const questions = Array.isArray(data) ? data : [data];
         console.log('Fetched questions with all fields:', questions);
-        setStoredQuestions(questions);
-        if (lastSubmittedId && questions.some(q => q.id === lastSubmittedId)) {
+        // Sort questions by id in descending order to show the latest at the top
+        const sortedQuestions = questions.sort((a, b) => b.id - a.id);
+        setStoredQuestions(sortedQuestions);
+        if (lastSubmittedId && sortedQuestions.some(q => q.id === lastSubmittedId)) {
           resetForm();
           setLastSubmittedId(null);
         }

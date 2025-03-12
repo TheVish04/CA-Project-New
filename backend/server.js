@@ -1,7 +1,7 @@
 const express = require('express');
 const sequelize = require('./config/database');
-const User = require('./models/User');
-const Question = require('./models/Question');
+const User = require('./models/User'); // Changed from const { User } = require('./models/User');
+const Question = require('./models/Question'); // Changed from const { Question } = require('./models/Question');
 const authRoutes = require('./routes/auth');
 const questionRoutes = require('./routes/questions');
 const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware');
@@ -42,45 +42,41 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Authentication routes
-app.use('/api/auth', authRoutes);
-
-// Question routes
-app.use('/api/questions', questionRoutes);
-
-// Example protected admin route
-app.get('/api/admin', authMiddleware, adminMiddleware, (req, res) => {
-  res.json({ message: 'Welcome to the admin panel', user: req.user.username });
-});
-
-// Health check endpoint with detailed status
-app.get('/health', (req, res) => {
-  const health = {
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    dbConnected: sequelize.connectionManager.hasActiveConnection(),
-    uptime: process.uptime(),
-    memoryUsage: process.memoryUsage(),
-  };
-  res.status(200).json(health);
-});
-
-// Global error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Global error:', {
-    stack: err.stack,
-    message: err.message,
-    status: err.status || 500,
-  });
-  res.status(err.status || 500).json({
-    error: 'Something went wrong!',
-    message: err.message || 'Internal server error',
-  });
-});
-
-// Initialize database and create default admin if none exists
+// Initialize database and models before setting up routes
 const initializeDatabase = async () => {
   try {
+    // Test the Sequelize connection
+    await sequelize.authenticate();
+    console.log('Database connection established successfully');
+
+    // Verify User model
+    if (!User) {
+      console.error('User model is undefined. Import path or file issue:', {
+        filePath: './models/User',
+        cwd: process.cwd(),
+      });
+      throw new Error('User model not loaded');
+    }
+    if (typeof User.findOne !== 'function') {
+      console.error('User model lacks findOne method:', User);
+      throw new Error('User model not initialized');
+    }
+    console.log('User model loaded successfully:', User);
+
+    // Verify Question model
+    if (!Question) {
+      console.error('Question model is undefined. Import path or file issue:', {
+        filePath: './models/Question',
+        cwd: process.cwd(),
+      });
+      throw new Error('Question model not loaded');
+    }
+    if (typeof Question.findOne !== 'function') {
+      console.error('Question model lacks findOne method:', Question);
+      throw new Error('Question model not initialized');
+    }
+    console.log('Question model loaded successfully:', Question);
+
     // Sync database without dropping tables, with logging
     await sequelize.sync({ force: false, logging: (msg) => console.log('Database sync:', msg) });
     console.log('Database synced successfully (force: false)');
@@ -120,8 +116,12 @@ const initializeDatabase = async () => {
     // Log total number of questions for debugging
     const questionCount = await Question.count();
     console.log(`Total questions in database: ${questionCount}`);
+
+    // Set up routes after successful initialization
+    app.use('/api/auth', authRoutes);
+    app.use('/api/questions', questionRoutes);
   } catch (err) {
-    console.error('Error initializing database:', {
+    console.error('Error initializing database or models:', {
       message: err.message,
       stack: err.stack,
     });
@@ -129,7 +129,37 @@ const initializeDatabase = async () => {
   }
 };
 
-// Start server only if database initialization succeeds
+// Example protected admin route
+app.get('/api/admin', authMiddleware, adminMiddleware, (req, res) => {
+  res.json({ message: 'Welcome to the admin panel', user: req.user.username });
+});
+
+// Health check endpoint with detailed status
+app.get('/health', (req, res) => {
+  const health = {
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    dbConnected: sequelize.connectionManager.hasActiveConnection(),
+    uptime: process.uptime(),
+    memoryUsage: process.memoryUsage(),
+  };
+  res.status(200).json(health);
+});
+
+// Global error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Global error:', {
+    stack: err.stack,
+    message: err.message,
+    status: err.status || 500,
+  });
+  res.status(err.status || 500).json({
+    error: 'Something went wrong!',
+    message: err.message || 'Internal server error',
+  });
+});
+
+// Start server only if database and models initialize successfully
 const PORT = process.env.PORT || 5000;
 initializeDatabase()
   .then(() => {
@@ -138,7 +168,7 @@ initializeDatabase()
     });
   })
   .catch((err) => {
-    console.error('Failed to start server due to database error:', {
+    console.error('Failed to start server due to initialization error:', {
       message: err.message,
       stack: err.stack,
     });

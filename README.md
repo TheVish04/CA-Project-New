@@ -16,6 +16,8 @@ npm install react-router-dom
 npm install dompurify
 npm install -D tailwindcss @tailwindcss/vite
 npm install react-pdf
+npm install aos
+npm install axios
 
 # backend
 npm init -y

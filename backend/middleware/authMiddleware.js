@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const User = require('../models/User'); // Changed from const { User } = require('../models/User');
 
 const authMiddleware = async (req, res, next) => {
   const token = req.headers['authorization']?.split(' ')[1]; // Extract token from "Bearer <token>"
@@ -8,7 +8,7 @@ const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, 'your-secret-key');
+    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use process.env.JWT_SECRET
     const user = await User.findByPk(decoded.id);
     if (!user) {
       return res.status(401).json({ error: 'User not found' });
@@ -16,7 +16,8 @@ const authMiddleware = async (req, res, next) => {
     req.user = user; // Attach user object to request
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
+    console.error('Token verification failed:', error.message);
+    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
   }
 };
 
@@ -24,7 +25,7 @@ const adminMiddleware = (req, res, next) => {
   if (req.user && req.user.role === 'admin') {
     next();
   } else {
-    return res.status(403).json({ error: 'Admin access required' });
+    return res.status(403).json({ error: 'Forbidden - Admin access required' });
   }
 };
 

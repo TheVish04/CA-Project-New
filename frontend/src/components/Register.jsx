@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Navbar from './Navbar';
-import './Login.css';
+import './Register.css';
 
-const Login = () => {
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
+const Register = () => {
+  const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setCredentials({ ...credentials, [e.target.name]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
@@ -18,21 +18,18 @@ const Login = () => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', credentials);
-      const { token } = response.data;
+      const response = await axios.post('http://localhost:5000/api/auth/register', {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password,
+        role: 'user',
+      });
 
-      localStorage.setItem('token', token);
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const role = payload.role;
-
-      if (role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/questions');
-      }
+      alert('Registration successful! Please log in.');
+      navigate('/login');
     } catch (err) {
-      setError('Invalid credentials or server error');
-      console.error('Login error:', err);
+      setError('Registration failed. Username or email may already be in use.');
+      console.error('Registration error:', err);
     }
   };
 
@@ -41,7 +38,7 @@ const Login = () => {
       <Navbar />
       <div className="auth-container">
         <div className="auth-form">
-          <h2>Login</h2>
+          <h2>Register</h2>
           {error && <p className="error">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div>
@@ -49,7 +46,17 @@ const Login = () => {
               <input
                 type="text"
                 name="username"
-                value={credentials.username}
+                value={formData.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div>
+              <label>Email:</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
                 onChange={handleChange}
                 required
               />
@@ -59,15 +66,15 @@ const Login = () => {
               <input
                 type="password"
                 name="password"
-                value={credentials.password}
+                value={formData.password}
                 onChange={handleChange}
                 required
               />
             </div>
-            <button type="submit">Login</button>
+            <button type="submit">Register</button>
           </form>
           <p>
-            New user? <a href="/register">Register here</a>
+            Already have an account? <a href="/login">Login here</a>
           </p>
         </div>
       </div>
@@ -75,4 +82,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default Register;

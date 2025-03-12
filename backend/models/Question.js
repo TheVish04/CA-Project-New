@@ -48,4 +48,4 @@ const Question = sequelize.define('Question', {
   },
 });
 
-module.exports = Question;
+module.exports = Question; // Ensure this exports the Question model object

@@ -1,0 +1,97 @@
+/* General Styling */
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', sans-serif;
+  line-height: 1.6;
+  background: #f4f4f4;
+  color: #333;
+  overflow-x: hidden; /* Prevent horizontal overflow at the root level */
+  width: 100%; /* Ensure full width without exceeding */
+}
+
+/* Page Wrapper */
+.page-wrapper {
+  min-height: 100vh;
+  width: 100%; /* Ensure it fits within the viewport */
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box; /* Include padding/border in width */
+}
+
+/* Hero Section */
+.hero {
+  min-height: 100vh; /* Changed to min-height to avoid forcing exact height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f4f4f4; /* Solid background color */
+  text-align: center;
+  padding: 70px 20px 20px; /* Add padding-top to account for navbar */
+  width: 100%; /* Ensure it fits within the viewport */
+  box-sizing: border-box;
+}
+
+.hero-content {
+  max-width: 800px;
+  width: 90%; /* Use percentage for responsiveness */
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.95); /* Slightly more opaque for clarity */
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 3.5rem;
+  margin-bottom: 1rem;
+  color: #1a2a44;
+  font-weight: 700;
+}
+
+.hero p {
+  font-size: 1.6rem;
+  margin-bottom: 2rem;
+  color: #333;
+  font-weight: 400;
+}
+
+.hero a {
+  display: inline-block;
+  padding: 15px 40px;
+  font-size: 1.3rem;
+  background: #00b4d8;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.hero a:hover {
+  transform: translateY(-3px);
+  background: #0096c7;
+  box-shadow: 0 5px 15px rgba(0, 180, 216, 0.4);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero {
+    padding: 70px 10px 10px; /* Adjust padding for mobile */
+  }
+  .hero h1 {
+    font-size: 2.5rem;
+  }
+  .hero p {
+    font-size: 1.3rem;
+  }
+  .hero a {
+    padding: 10px 30px;
+    font-size: 1.1rem;
+  }
+  .hero-content {
+    width: 95%; /* Slightly wider on mobile */
+    padding: 20px;
+  }
+}

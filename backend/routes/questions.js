@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
-const Question = require('../models/Question');
+const Question = require('../models/Question'); // Changed from const { Question } = require('../models/Question');
 const Joi = require('joi');
 
 const questionSchema = Joi.object({
