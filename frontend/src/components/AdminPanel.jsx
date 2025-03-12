@@ -352,9 +352,11 @@ const AdminPanel = () => {
       }
     });
 
+    // Additional debug to inspect FormData
     for (let [key, value] of formDataToSend.entries()) {
       console.log(`FormData Entry - ${key}: ${value}`);
     }
+    console.log('Final FormData before fetch:', Object.fromEntries(formDataToSend.entries()));
 
     try {
       const response = await fetch('http://localhost:5000/api/questions', {

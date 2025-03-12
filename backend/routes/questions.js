@@ -51,7 +51,7 @@ const questionSchema = Joi.object({
 // POST route (admin only)
 router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
-    console.log('Received question data:', req.body);
+    console.log('Received question data (raw):', req.body); // Enhanced log
 
     const {
       subject,
@@ -95,7 +95,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
     // Prepare data for validation
     const dataToValidate = {
       subject: normalizedSubject,
-      examType,
+      examType: examType || 'MTP', // Ensure examType has a fallback
       year,
       month,
       group,
@@ -107,7 +107,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
       subQuestions: parsedSubQuestions,
     };
 
-    console.log('Data to validate:', dataToValidate);
+    console.log('Data to validate:', dataToValidate); // Enhanced log
 
     // Validate input
     const { error } = questionSchema.validate(dataToValidate);
@@ -118,7 +118,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const questionData = {
       subject: normalizedSubject,
-      examType,
+      examType: dataToValidate.examType, // Use validated examType
       year,
       month,
       group,
@@ -213,7 +213,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
     // Prepare data for validation
     const dataToValidate = {
       subject: normalizedSubject,
-      examType,
+      examType: examType || 'MTP', // Ensure examType has a fallback
       year,
       month,
       group,
@@ -236,7 +236,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const updatedData = {
       subject: normalizedSubject,
-      examType,
+      examType: dataToValidate.examType,
       year,
       month,
       group,
