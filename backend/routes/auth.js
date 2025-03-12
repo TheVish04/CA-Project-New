@@ -1,14 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models/User'); // Updated path to import User model directly
+const Sequelize = require('sequelize'); // Import Sequelize for Sequelize.Op
+const { User } = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const Sequelize = require('sequelize').Sequelize;
 require('dotenv').config();
 
 router.post('/login', async (req, res) => {
   try {
     const { username, email, password } = req.body;
+    console.log('Login attempt:', { username, email }); // Debug log
+
+    // Validate JWT_SECRET
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined in environment variables');
+    }
 
     // Find user by username or email
     const user = await User.findOne({
@@ -42,8 +48,11 @@ router.post('/login', async (req, res) => {
     console.log('Login successful for user:', user.username);
     res.json({ token });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ error: 'Failed to login' });
+    console.error('Login error:', {
+      message: error.message,
+      stack: error.stack,
+    });
+    res.status(500).json({ error: 'Failed to login', details: error.message });
   }
 });
 
