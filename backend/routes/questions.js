@@ -35,12 +35,12 @@ const questionSchema = Joi.object({
     .items(
       Joi.object({
         subQuestionNumber: Joi.string().allow('').optional(),
-        subQuestionText: Joi.string().required(),
+        subQuestionText: Joi.string().allow('').optional(), // Allow empty for display
         subOptions: Joi.array()
           .optional()
           .items(
             Joi.object({
-              optionText: Joi.string().required(),
+              optionText: Joi.string().allow('').optional(), // Allow empty for display
               isCorrect: Joi.boolean().default(false),
             })
           ),
@@ -73,9 +73,9 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
           .split(' ')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ')
-      : 'Advanced Accounting'; // Fallback to a valid default
+      : 'Advanced Accounting';
 
-    // Ensure all required fields have fallbacks
+    // Use form values directly without fallbacks
     const normalizedExamType = examType || 'MTP';
     const normalizedYear = year || '2024';
     const normalizedMonth = month || 'March';
@@ -85,7 +85,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
     const normalizedQuestionText = questionText || 'Default question text';
     const normalizedPageNumber = pageNumber || '1';
 
-    // Safely parse subQuestions (handle both string and array cases)
+    // Safely parse subQuestions
     let parsedSubQuestions = [];
     if (subQuestions) {
       if (typeof subQuestions === 'string') {
@@ -97,12 +97,9 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
         }
       } else if (Array.isArray(subQuestions)) {
         parsedSubQuestions = subQuestions;
-      } else {
-        return res.status(400).json({ error: 'subQuestions must be a JSON string or an array' });
       }
     }
 
-    // Prepare data for validation
     const dataToValidate = {
       subject: normalizedSubject,
       examType: normalizedExamType,
@@ -119,7 +116,6 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     console.log('Data to validate:', dataToValidate);
 
-    // Validate input
     const { error } = questionSchema.validate(dataToValidate);
     if (error) {
       console.log('Validation error:', error.details);
@@ -142,29 +138,10 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const question = await Question.create(questionData);
     console.log('Question created with ID:', question.id);
-    res.status(201).json({ id: question.id });
+    res.status(201).json({ id: question.id, ...questionData }); // Return all data including ID
   } catch (error) {
     console.error('Error creating question:', error);
     res.status(500).json({ error: `Failed to create question: ${error.message}` });
-  }
-});
-
-// GET route with authentication and filtering (all authenticated users)
-router.get('/', authMiddleware, async (req, res) => {
-  try {
-    const { subject, year, questionNumber } = req.query;
-    const where = {};
-    if (subject) where.subject = subject;
-    if (year) where.year = year;
-    if (questionNumber) where.questionNumber = questionNumber;
-
-    console.log('Fetching questions with filters:', where);
-    const questions = await Question.findAll({ where });
-    console.log('Fetched questions:', questions);
-    res.json(questions);
-  } catch (error) {
-    console.error('Error fetching questions:', error);
-    res.status(500).json({ error: `Failed to fetch questions: ${error.message}` });
   }
 });
 
@@ -201,20 +178,21 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
           .split(' ')
           .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join(' ')
-      : '';
+      : question.subject;
 
-    // Ensure all required fields have fallbacks
-    const normalizedExamType = examType || 'MTP';
-    const normalizedYear = year || '2024';
-    const normalizedMonth = month || 'March';
-    const normalizedGroup = group || 'Group I';
-    const normalizedPaperName = paperName || 'Paper 01';
-    const normalizedQuestionNumber = questionNumber || '1';
-    const normalizedQuestionText = questionText || 'Default question text';
-    const normalizedPageNumber = pageNumber || '1';
+    // Use form values directly, fall back to existing values
+    const normalizedExamType = examType || question.examType;
+    const normalizedYear = year || question.year;
+    const normalizedMonth = month || question.month;
+    const normalizedGroup = group || question.group;
+    const normalizedPaperName = paperName || question.paperName;
+    const normalizedQuestionNumber = questionNumber || question.questionNumber;
+    const normalizedQuestionText = questionText || question.questionText;
+    const normalizedAnswerText = answerText || question.answerText || '';
+    const normalizedPageNumber = pageNumber || question.pageNumber;
 
-    // Safely parse subQuestions (handle both string and array cases)
-    let parsedSubQuestions = [];
+    // Safely parse subQuestions
+    let parsedSubQuestions = question.subQuestions || [];
     if (subQuestions) {
       if (typeof subQuestions === 'string') {
         try {
@@ -225,12 +203,9 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
         }
       } else if (Array.isArray(subQuestions)) {
         parsedSubQuestions = subQuestions;
-      } else {
-        return res.status(400).json({ error: 'subQuestions must be a JSON string or an array' });
       }
     }
 
-    // Prepare data for validation
     const dataToValidate = {
       subject: normalizedSubject,
       examType: normalizedExamType,
@@ -240,14 +215,13 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       paperName: normalizedPaperName,
       questionNumber: normalizedQuestionNumber,
       questionText: normalizedQuestionText,
-      answerText: answerText || '',
+      answerText: normalizedAnswerText,
       pageNumber: normalizedPageNumber,
       subQuestions: parsedSubQuestions,
     };
 
     console.log('Data to validate for update:', dataToValidate);
 
-    // Validate input
     const { error } = questionSchema.validate(dataToValidate);
     if (error) {
       console.log('Validation error on update:', error.details);
@@ -263,17 +237,36 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       paperName: normalizedPaperName,
       questionNumber: normalizedQuestionNumber,
       questionText: normalizedQuestionText,
-      answerText: answerText || '',
+      answerText: normalizedAnswerText,
       pageNumber: normalizedPageNumber,
       subQuestions: parsedSubQuestions,
     };
 
     await question.update(updatedData);
     console.log('Question updated successfully for ID:', id);
-    res.json({ message: 'Question updated successfully' });
+    res.json({ message: 'Question updated successfully', id, ...updatedData });
   } catch (error) {
     console.error('Error updating question:', error);
     res.status(500).json({ error: `Failed to update question: ${error.message}` });
+  }
+});
+
+// GET route with authentication and filtering (all authenticated users)
+router.get('/', authMiddleware, async (req, res) => {
+  try {
+    const { subject, year, questionNumber } = req.query;
+    const where = {};
+    if (subject) where.subject = subject;
+    if (year) where.year = year;
+    if (questionNumber) where.questionNumber = questionNumber;
+
+    console.log('Fetching questions with filters:', where);
+    const questions = await Question.findAll({ where });
+    console.log('Fetched questions:', questions);
+    res.json(questions);
+  } catch (error) {
+    console.error('Error fetching questions:', error);
+    res.status(500).json({ error: `Failed to fetch questions: ${error.message}` });
   }
 });
 

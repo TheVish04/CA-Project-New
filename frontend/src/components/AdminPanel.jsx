@@ -29,6 +29,7 @@ const AdminPanel = () => {
     questionNumber: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [lastSubmittedId, setLastSubmittedId] = useState(null); // Track the last submitted question ID
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -50,6 +51,11 @@ const AdminPanel = () => {
         const questions = await response.json();
         console.log('Fetched questions with all fields:', questions);
         setStoredQuestions(questions);
+        // Reset form only after fetching the new question
+        if (lastSubmittedId && questions.some(q => q.id === lastSubmittedId)) {
+          resetForm();
+          setLastSubmittedId(null); // Clear the last submitted ID
+        }
       } else {
         console.error('Failed to fetch questions:', response.statusText);
       }
@@ -332,7 +338,7 @@ const AdminPanel = () => {
       questionNumber: formData.questionNumber || '1',
       questionText: DOMPurify.sanitize(formData.questionText || 'Default question text'),
       answerText: DOMPurify.sanitize(formData.answerText || ''), // Ensure answerText is sent
-      pageNumber: formData.pageNumber || '1',
+      pageNumber: formData.pageNumber || '1', // Use formData value directly
       subQuestions: cleanSubQuestions(formData.subQuestions), // Updated to preserve empty values
     };
 
@@ -364,9 +370,9 @@ const AdminPanel = () => {
       });
       const result = await response.json();
       if (response.ok) {
-        alert('Question added successfully');
-        resetForm();
-        applyFilters(token);
+        const newQuestionId = result.id; // Assuming the response includes the new question ID
+        setLastSubmittedId(newQuestionId); // Set the last submitted ID
+        applyFilters(token); // Fetch updated questions
       } else {
         alert(`Failed to add question: ${result.error || 'Unknown error'}`);
       }
@@ -392,7 +398,7 @@ const AdminPanel = () => {
     const sanitizedData = {
       ...formData,
       questionText: DOMPurify.sanitize(formData.questionText),
-      answerText: DOMPurify.sanitize(formData.answerText), // Ensure answerText is sent
+      answerText: DOMPurify.sanitize(formData.answerText || ''), // Ensure answerText is sent
       subQuestions: cleanSubQuestions(formData.subQuestions), // Updated to preserve empty values
     };
 
@@ -415,10 +421,8 @@ const AdminPanel = () => {
       });
       const result = await response.json();
       if (response.ok) {
-        alert('Question updated successfully');
-        resetForm();
-        setEditingQuestionId(null);
-        applyFilters(token);
+        setLastSubmittedId(editingQuestionId); // Set the last updated ID
+        applyFilters(token); // Fetch updated questions
       } else {
         alert(`Failed to update question: ${result.error || 'Unknown error'}`);
       }
@@ -442,7 +446,7 @@ const AdminPanel = () => {
       questionNumber: question.questionNumber || '',
       questionText: question.questionText || '',
       answerText: question.answerText || '', // Ensure answerText is set
-      pageNumber: question.pageNumber || '',
+      pageNumber: question.pageNumber || '', // Use fetched value
       subQuestions: question.subQuestions ? [...question.subQuestions] : [],
     });
     setEditingQuestionId(question.id);
