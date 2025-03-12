@@ -92,11 +92,11 @@ const initializeDatabase = async () => {
     // Check if an admin user exists, create one if not
     const adminCount = await User.count({ where: { role: 'admin' } });
     if (adminCount === 0) {
-      const hashedPassword = await bcrypt.hash('admin123', 10); // Hash password with salt rounds 10
+      const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10); // Use .env password with fallback
       const defaultAdmin = await User.create({
-        username: 'admin',
-        password: hashedPassword, // Use hashed password
-        email: 'admin@example.com',
+        username: process.env.ADMIN_USERNAME || 'admin',
+        password: hashedPassword || 'admin123', // Use hashed password
+        email: process.env.ADMIN_EMAIL || 'admin@example.com',
         role: 'admin',
       });
       console.log('Default admin created:', defaultAdmin.username);
