@@ -6,25 +6,18 @@ import './LandingPage.css';
 
 const LandingPage = () => {
   useEffect(() => {
-    // Initialize AOS
     AOS.init({
       duration: 1000,
       once: true,
-      disable: 'mobile', // Optional: Disable AOS on mobile
+      disable: 'mobile',
     });
-
-    // Ensure scroll to top happens after AOS initialization
     const scrollToTop = () => {
       window.scrollTo({
         top: 0,
-        behavior: 'smooth',
+        behavior: 'auto', // Changed to auto to avoid forced scrolling
       });
     };
-
-    // Delay scroll to top to avoid conflicts
     setTimeout(scrollToTop, 0);
-
-    // Refresh AOS after scroll
     AOS.refresh();
   }, []);
 

@@ -1,21 +1,11 @@
 /* General Styling */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Roboto', sans-serif;
-  line-height: 1.6;
-  background: #f4f4f4;
-  color: #333;
-  overflow-x: hidden;
-}
-
 .landing-page {
   position: relative;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
   margin: 0;
   overflow-x: hidden;
-  scroll-behavior: auto; /* Changed to auto to avoid conflicts with manual scroll */
+  scroll-behavior: auto;
 }
 
 /* Navigation Bar */
@@ -55,16 +45,18 @@ body {
   border-bottom: 2px solid #00b4d8;
 }
 
-/* Hero Section */
-.hero {
+/* Hero Section (Specific to Landing Page) */
+.landing-page .hero {
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, rgba(26, 42, 68, 0.8), rgba(0, 180, 216, 0.3)), url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80') no-repeat center center/cover;
+  background: linear-gradient(135deg, rgba(26, 42, 68, 0.8), rgba(0, 180, 216, 0.3)), 
+              url('https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1350&q=80') 
+              no-repeat center center/cover;
   text-align: center;
   padding: 0 20px;
-  width: 100vw;
+  width: 100%;
   box-sizing: border-box;
   overflow: hidden;
 }
@@ -220,9 +212,7 @@ body {
     padding: 10px 30px;
     font-size: 1.1rem;
   }
-  .features h2,
-  .about h2,
-  .contact h2 {
+  .features h2, .about h2, .contact h2 {
     font-size: 2rem;
   }
   .feature-grid {
@@ -237,9 +227,7 @@ body {
   .hero p {
     font-size: 1.8rem;
   }
-  .features h2,
-  .about h2,
-  .contact h2 {
+  .features h2, .about h2, .contact h2 {
     font-size: 3rem;
   }
 }
