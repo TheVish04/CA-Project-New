@@ -65,7 +65,6 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
       subQuestions,
     } = req.body;
 
-    // Use submitted values directly, no defaults
     const dataToValidate = {
       subject,
       examType,
@@ -77,7 +76,7 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
       questionText,
       answerText: answerText || '',
       pageNumber,
-      subQuestions: subQuestions || [], // subQuestions is already a JSON array
+      subQuestions: subQuestions || [],
     };
 
     console.log('Data to validate:', dataToValidate);
@@ -144,7 +143,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       questionText: questionText || question.questionText,
       answerText: answerText || question.answerText || '',
       pageNumber: pageNumber || question.pageNumber,
-      subQuestions: subQuestions || question.subQuestions || [], // subQuestions is already a JSON array
+      subQuestions: subQuestions || question.subQuestions || [],
     };
 
     const { error } = questionSchema.validate(dataToValidate, { abortEarly: false });

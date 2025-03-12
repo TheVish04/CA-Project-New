@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { User } = require('../models');
+const { User } = require('../models/User'); // Updated path to import User model directly
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const Sequelize = require('sequelize').Sequelize;
 require('dotenv').config();
 
 router.post('/login', async (req, res) => {

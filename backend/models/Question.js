@@ -36,18 +36,16 @@ const Question = sequelize.define('Question', {
   },
   answerText: {
     type: DataTypes.TEXT,
-    allowNull: true, // Optional
+    allowNull: true,
   },
   pageNumber: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   subQuestions: {
-    type: DataTypes.JSON, // Store as JSON to handle nested objects
-    allowNull: true, // Optional
+    type: DataTypes.JSON,
+    allowNull: true,
   },
-}, {
-  timestamps: true,
 });
 
 module.exports = Question;

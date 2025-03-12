@@ -105,7 +105,7 @@ const initializeDatabase = async () => {
       console.log('Default admin created:', {
         username: defaultAdmin.username,
         email: defaultAdmin.email,
-        password: adminPassword, // Log the plaintext password for debugging (remove in production)
+        password: adminPassword,
       });
     } else {
       console.log('Admin user already exists, skipping creation.');
@@ -113,7 +113,7 @@ const initializeDatabase = async () => {
       console.log('Existing admin details:', {
         username: existingAdmin.username,
         email: existingAdmin.email,
-        passwordHash: existingAdmin.password, // Log the hashed password for debugging
+        passwordHash: existingAdmin.password,
       });
     }
 
