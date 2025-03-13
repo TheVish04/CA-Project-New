@@ -25,39 +25,37 @@ const AdminPanel = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [storedQuestions, setStoredQuestions] = useState([]);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
+  // Updated filters state with additional criteria for advanced filtering & search
   const [filters, setFilters] = useState({
     subject: '',
     year: '',
     questionNumber: '',
+    examType: '',
+    month: '',
+    group: '',
+    search: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmittedId, setLastSubmittedId] = useState(null);
-  // New states for pagination/infinite scroll
+
+  // Pagination states (if needed later with infinite scroll)
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-
-  const LIMIT = 10; // Number of questions to fetch per page
+  const LIMIT = 10; // For example, 10 per page
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/');
     } else {
-      // Reset page and stored questions when component mounts or filters change
-      setCurrentPage(1);
-      setStoredQuestions([]);
-      fetchQuestions(token, 1);
+      applyFilters(token);
     }
-  }, [navigate]); // You can add filters to dependency if you want to auto-update on filter change
+  }, [navigate]);
 
-  // Fetch questions with pagination
-  const fetchQuestions = async (token, page) => {
+  // Modified fetchQuestions with pagination (if needed) and applying all filters
+  const fetchQuestions = async (token, query = '') => {
     try {
-      // Append pagination parameters to filters query
-      const baseQuery = new URLSearchParams(filters).toString();
-      const paginationQuery = `page=${page}&limit=${LIMIT}`;
-      const query = baseQuery ? `${baseQuery}&${paginationQuery}` : paginationQuery;
-      const response = await fetch(`http://localhost:5000/api/questions?${query}`, {
+      const response = await fetch(`http://localhost:5000/api/questions${query ? `?${query}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -68,20 +66,8 @@ const AdminPanel = () => {
       if (response.ok) {
         const questions = Array.isArray(data) ? data : [data];
         console.log('Fetched questions with all fields:', questions);
-        // Sort questions by descending id
         const sortedQuestions = questions.sort((a, b) => b.id - a.id);
-        if (page === 1) {
-          setStoredQuestions(sortedQuestions);
-        } else {
-          setStoredQuestions((prev) => [...prev, ...sortedQuestions]);
-        }
-        // If fewer than LIMIT were returned, there are no more questions
-        if (questions.length < LIMIT) {
-          setHasMore(false);
-        } else {
-          setHasMore(true);
-        }
-        // If lastSubmittedId is found in results, reset form
+        setStoredQuestions(sortedQuestions);
         if (lastSubmittedId && sortedQuestions.some(q => q.id === lastSubmittedId)) {
           resetForm();
           setLastSubmittedId(null);
@@ -96,30 +82,11 @@ const AdminPanel = () => {
     }
   };
 
-  // Call this to apply filters and reset pagination
+  // Build query string from filters (including new advanced ones)
   const applyFilters = (token) => {
-    setCurrentPage(1);
-    setStoredQuestions([]);
-    setHasMore(true);
-    fetchQuestions(token, 1);
+    const query = new URLSearchParams(filters).toString();
+    fetchQuestions(token, query);
   };
-
-  // Infinite scroll: load more when user scrolls near bottom
-  const handleScroll = useCallback(() => {
-    if (!hasMore || isSubmitting) return;
-    if (window.innerHeight + window.scrollY >= document.documentElement.offsetHeight - 100) {
-      // Load next page
-      const token = localStorage.getItem('token');
-      const nextPage = currentPage + 1;
-      fetchQuestions(token, nextPage);
-      setCurrentPage(nextPage);
-    }
-  }, [hasMore, currentPage, isSubmitting]);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -728,6 +695,7 @@ const AdminPanel = () => {
             </div>
           </form>
 
+          {/* Advanced Filtering Section */}
           <div className="filter-section">
             <h2>Filter Questions</h2>
             <div className="filter-grid">
@@ -759,6 +727,47 @@ const AdminPanel = () => {
                   value={filters.questionNumber}
                   onChange={handleFilterChange}
                   className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Exam Type:</label>
+                <input
+                  type="text"
+                  name="examType"
+                  value={filters.examType}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Month:</label>
+                <input
+                  type="text"
+                  name="month"
+                  value={filters.month}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Group:</label>
+                <input
+                  type="text"
+                  name="group"
+                  value={filters.group}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Search Keyword:</label>
+                <input
+                  type="text"
+                  name="search"
+                  value={filters.search}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                  placeholder="Enter keywords"
                 />
               </div>
             </div>
@@ -834,11 +843,6 @@ const AdminPanel = () => {
                     </div>
                   </div>
                 ))}
-                {hasMore && (
-                  <div className="loading-indicator">
-                    <p>Loading more questions...</p>
-                  </div>
-                )}
               </div>
             )}
           </div>

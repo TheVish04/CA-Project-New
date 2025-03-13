@@ -9,7 +9,15 @@ const Questions = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ subject: '', examType: '', questionNumber: '' });
+  // Updated filters state with additional criteria
+  const [filters, setFilters] = useState({
+    subject: '',
+    examType: '',
+    questionNumber: '',
+    month: '',
+    group: '',
+    search: '',
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnswers, setShowAnswers] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false); // State for modal visibility
@@ -63,11 +71,15 @@ const Questions = () => {
     return uniqueQuestionNumbers.sort(); // Sort for better UX
   };
 
+  // Updated filtering logic to include new criteria and search keyword (case-insensitive)
   const filteredQuestions = questions.filter((q) => {
     return (
       (!filters.subject || q.subject === filters.subject) &&
       (!filters.examType || q.examType === filters.examType) &&
-      (!filters.questionNumber || q.questionNumber === filters.questionNumber)
+      (!filters.questionNumber || q.questionNumber === filters.questionNumber) &&
+      (!filters.month || q.month === filters.month) &&
+      (!filters.group || q.group === filters.group) &&
+      (!filters.search || (q.questionText && q.questionText.toLowerCase().includes(filters.search.toLowerCase())))
     );
   });
 
@@ -89,6 +101,8 @@ const Questions = () => {
               <p>Error: {error}</p>
             </div>
           )}
+
+          {/* Filters Section */}
           <div className="filters">
             <div className="filter-group">
               <label>Filter by Subject:</label>
@@ -117,6 +131,28 @@ const Questions = () => {
               </select>
             </div>
             <div className="filter-group">
+              <label>Filter by Month:</label>
+              <select
+                value={filters.month}
+                onChange={(e) => setFilters({ ...filters, month: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="March">March</option>
+                <option value="February">February</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Filter by Group:</label>
+              <select
+                value={filters.group}
+                onChange={(e) => setFilters({ ...filters, group: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="Group I">Group I</option>
+                <option value="Group II">Group II</option>
+              </select>
+            </div>
+            <div className="filter-group">
               <label>Filter by Question No.:</label>
               <select
                 value={filters.questionNumber}
@@ -131,6 +167,16 @@ const Questions = () => {
               </select>
             </div>
             <div className="filter-group">
+              <label>Search Keyword:</label>
+              <input
+                type="text"
+                name="search"
+                value={filters.search}
+                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                placeholder="Enter keywords"
+              />
+            </div>
+            <div className="filter-group">
               <label>
                 <input
                   type="checkbox"
@@ -141,6 +187,7 @@ const Questions = () => {
               </label>
             </div>
           </div>
+
           {filteredQuestions.length === 0 && !error && <p className="no-questions">No questions available.</p>}
           {currentQuestions.length > 0 && (
             <>

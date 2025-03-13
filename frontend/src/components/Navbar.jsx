@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState(null);
@@ -29,10 +28,11 @@ const Navbar = () => {
         }
       } catch (error) {
         console.error('Error fetching user info:', error);
+        // Token might be invalid or expired; clear it and update state
         setIsLoggedIn(false);
         setIsAdmin(false);
         setUser(null);
-        localStorage.removeItem('token'); // Clear invalid token
+        localStorage.removeItem('token');
         navigate('/login');
       }
     } else {
@@ -42,9 +42,10 @@ const Navbar = () => {
     }
   };
 
+  // Call updateAuthState only once on mount to verify the token
   useEffect(() => {
     updateAuthState();
-  }, [location]);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
