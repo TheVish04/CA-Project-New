@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PreviewPanel from './PreviewPanel';
 import Navbar from './Navbar';
@@ -32,19 +32,32 @@ const AdminPanel = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSubmittedId, setLastSubmittedId] = useState(null);
+  // New states for pagination/infinite scroll
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+
+  const LIMIT = 10; // Number of questions to fetch per page
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/');
     } else {
-      applyFilters(token);
+      // Reset page and stored questions when component mounts or filters change
+      setCurrentPage(1);
+      setStoredQuestions([]);
+      fetchQuestions(token, 1);
     }
-  }, [navigate]);
+  }, [navigate]); // You can add filters to dependency if you want to auto-update on filter change
 
-  const fetchQuestions = async (token, query = '') => {
+  // Fetch questions with pagination
+  const fetchQuestions = async (token, page) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/questions${query ? `?${query}` : ''}`, {
+      // Append pagination parameters to filters query
+      const baseQuery = new URLSearchParams(filters).toString();
+      const paginationQuery = `page=${page}&limit=${LIMIT}`;
+      const query = baseQuery ? `${baseQuery}&${paginationQuery}` : paginationQuery;
+      const response = await fetch(`http://localhost:5000/api/questions?${query}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -55,8 +68,20 @@ const AdminPanel = () => {
       if (response.ok) {
         const questions = Array.isArray(data) ? data : [data];
         console.log('Fetched questions with all fields:', questions);
+        // Sort questions by descending id
         const sortedQuestions = questions.sort((a, b) => b.id - a.id);
-        setStoredQuestions(sortedQuestions);
+        if (page === 1) {
+          setStoredQuestions(sortedQuestions);
+        } else {
+          setStoredQuestions((prev) => [...prev, ...sortedQuestions]);
+        }
+        // If fewer than LIMIT were returned, there are no more questions
+        if (questions.length < LIMIT) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
+        // If lastSubmittedId is found in results, reset form
         if (lastSubmittedId && sortedQuestions.some(q => q.id === lastSubmittedId)) {
           resetForm();
           setLastSubmittedId(null);
@@ -71,10 +96,30 @@ const AdminPanel = () => {
     }
   };
 
+  // Call this to apply filters and reset pagination
   const applyFilters = (token) => {
-    const query = new URLSearchParams(filters).toString();
-    fetchQuestions(token, query);
+    setCurrentPage(1);
+    setStoredQuestions([]);
+    setHasMore(true);
+    fetchQuestions(token, 1);
   };
+
+  // Infinite scroll: load more when user scrolls near bottom
+  const handleScroll = useCallback(() => {
+    if (!hasMore || isSubmitting) return;
+    if (window.innerHeight + window.scrollY >= document.documentElement.offsetHeight - 100) {
+      // Load next page
+      const token = localStorage.getItem('token');
+      const nextPage = currentPage + 1;
+      fetchQuestions(token, nextPage);
+      setCurrentPage(nextPage);
+    }
+  }, [hasMore, currentPage, isSubmitting]);
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -98,10 +143,10 @@ const AdminPanel = () => {
   };
 
   const removeSubQuestion = (index) => {
-    console.log('Removing subquestion at index:', index); // Debug log
+    console.log('Removing subquestion at index:', index);
     setFormData((prev) => {
       const updatedSubQuestions = prev.subQuestions.filter((_, i) => i !== index);
-      console.log('Updated subQuestions:', updatedSubQuestions); // Debug log
+      console.log('Updated subQuestions:', updatedSubQuestions);
       return { ...prev, subQuestions: updatedSubQuestions };
     });
   };
@@ -210,7 +255,6 @@ const AdminPanel = () => {
       validateField(field, formData[field]);
       if (errors[field]) newErrors[field] = errors[field];
     });
-
     formData.subQuestions.forEach((subQ, index) => {
       validateSubQuestion(index, 'subQuestionText', subQ.subQuestionText);
       if (errors[`subQuestion_${index}`]) newErrors[`subQuestion_${index}`] = errors[`subQuestion_${index}`];
@@ -219,7 +263,6 @@ const AdminPanel = () => {
         if (errors[`subOption_${index}_${optIndex}`]) newErrors[`subOption_${index}_${optIndex}`] = errors[`subOption_${index}_${optIndex}`];
       });
     });
-
     return newErrors;
   };
 
@@ -234,6 +277,7 @@ const AdminPanel = () => {
     }));
   };
 
+  // Reset the form and exit edit mode
   const resetForm = () => {
     setFormData({
       subject: '',
@@ -296,6 +340,8 @@ const AdminPanel = () => {
         setLastSubmittedId(result.id);
         applyFilters(token);
         alert('Question added successfully');
+        // Reset the form after successful submission
+        resetForm();
       } else {
         alert(`Failed to add question: ${result.error || 'Unknown error'}`);
       }
@@ -347,6 +393,8 @@ const AdminPanel = () => {
         setLastSubmittedId(editingQuestionId);
         applyFilters(token);
         alert('Question updated successfully');
+        // Reset the form after successful update to exit edit mode
+        resetForm();
       } else {
         alert(`Failed to update question: ${result.error || 'Unknown error'}`);
       }
@@ -786,6 +834,11 @@ const AdminPanel = () => {
                     </div>
                   </div>
                 ))}
+                {hasMore && (
+                  <div className="loading-indicator">
+                    <p>Loading more questions...</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
