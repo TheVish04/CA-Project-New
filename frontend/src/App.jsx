@@ -1,10 +1,10 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import LandingPage from './components/LandingPage';
+import LandingPage from './pages/LandingPage';
+import About from './pages/About';
+import Contact from './pages/Contact';
 import Login from './components/Login';
 import Register from './components/Register';
-import About from './components/About';
-import Contact from './components/Contact';
 import Questions from './components/Questions';
 import AdminPanel from './components/AdminPanel';
 

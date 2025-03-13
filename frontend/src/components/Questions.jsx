@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
-import Navbar from './Navbar'; // Import Navbar from the same directory
+import Navbar from './Navbar';
+import PreviewPanel from './PreviewPanel'; // Import PreviewPanel
 import './Questions.css';
 
 const Questions = () => {
@@ -11,6 +12,8 @@ const Questions = () => {
   const [filters, setFilters] = useState({ subject: '', examType: '', questionNumber: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnswers, setShowAnswers] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false); // State for modal visibility
+  const [selectedQuestion, setSelectedQuestion] = useState(null); // State for selected question
   const questionsPerPage = 5;
 
   useEffect(() => {
@@ -40,6 +43,19 @@ const Questions = () => {
     }
   }, [navigate]);
 
+  const handlePreview = (questionId) => {
+    const question = questions.find((q) => q.id === questionId);
+    if (question) {
+      setSelectedQuestion(question);
+      setPreviewOpen(true);
+    }
+  };
+
+  const handleClosePreview = () => {
+    setPreviewOpen(false);
+    setSelectedQuestion(null);
+  };
+
   // Generate unique question numbers for the current subject
   const getUniqueQuestionNumbers = () => {
     const subjectFiltered = questions.filter((q) => !filters.subject || q.subject === filters.subject);
@@ -64,7 +80,7 @@ const Questions = () => {
 
   return (
     <div className="page-wrapper">
-      <Navbar /> {/* Add Navbar here */}
+      <Navbar />
       <section className="questions-section">
         <div className="questions-container">
           <h1>CA Exam Questions</h1>
@@ -177,6 +193,12 @@ const Questions = () => {
                         ))}
                       </>
                     )}
+                    <button
+                      onClick={() => handlePreview(question.id)}
+                      className="preview-btn"
+                    >
+                      Preview
+                    </button>
                   </div>
                 ))}
               </div>
@@ -195,6 +217,9 @@ const Questions = () => {
           )}
         </div>
       </section>
+      {previewOpen && (
+        <PreviewPanel data={selectedQuestion} onClose={handleClosePreview} />
+      )}
     </div>
   );
 };
