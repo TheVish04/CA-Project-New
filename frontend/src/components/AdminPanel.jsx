@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PreviewPanel from './PreviewPanel';
-import Navbar from './Navbar'; // Add Navbar import
+import Navbar from './Navbar';
 import DOMPurify from 'dompurify';
 import './AdminPanel.css';
 
@@ -55,7 +55,6 @@ const AdminPanel = () => {
       if (response.ok) {
         const questions = Array.isArray(data) ? data : [data];
         console.log('Fetched questions with all fields:', questions);
-        // Sort questions by id in descending order to show the latest at the top
         const sortedQuestions = questions.sort((a, b) => b.id - a.id);
         setStoredQuestions(sortedQuestions);
         if (lastSubmittedId && sortedQuestions.some(q => q.id === lastSubmittedId)) {
@@ -99,18 +98,19 @@ const AdminPanel = () => {
   };
 
   const removeSubQuestion = (index) => {
-    setFormData((prev) => ({
-      ...prev,
-      subQuestions: prev.subQuestions.filter((_, i) => i !== index),
-    }));
+    console.log('Removing subquestion at index:', index); // Debug log
+    setFormData((prev) => {
+      const updatedSubQuestions = prev.subQuestions.filter((_, i) => i !== index);
+      console.log('Updated subQuestions:', updatedSubQuestions); // Debug log
+      return { ...prev, subQuestions: updatedSubQuestions };
+    });
   };
 
-  const handleSubQuestionChange = (index, e) => {
-    const { name, value } = e.target;
+  const handleSubQuestionChange = (index, field, value) => {
     const updated = [...formData.subQuestions];
-    updated[index][name] = value;
+    updated[index][field] = value;
     setFormData((prev) => ({ ...prev, subQuestions: updated }));
-    validateSubQuestion(index, name, value);
+    validateSubQuestion(index, field, value);
   };
 
   const addSubOption = (subIndex) => {
@@ -194,8 +194,8 @@ const AdminPanel = () => {
     setErrors((prev) => ({ ...prev, [name]: error }));
   };
 
-  const validateSubQuestion = (index, name, value) => {
-    let error = name === 'subQuestionText' && !value.trim() ? `Sub-question ${index + 1} text is required` : '';
+  const validateSubQuestion = (index, field, value) => {
+    let error = field === 'subQuestionText' && !value.trim() ? `Sub-question ${index + 1} text is required` : '';
     setErrors((prev) => ({ ...prev, [`subQuestion_${index}`]: error }));
   };
 
@@ -403,7 +403,7 @@ const AdminPanel = () => {
 
   return (
     <div className="page-wrapper">
-      <Navbar /> {/* Add Navbar */}
+      <Navbar />
       <section className="admin-section">
         <div className="admin-container">
           <h1>Admin Panel</h1>
@@ -592,7 +592,7 @@ const AdminPanel = () => {
                       type="text"
                       name="subQuestionNumber"
                       value={subQ.subQuestionNumber}
-                      onChange={(e) => handleSubQuestionChange(subIndex, e)}
+                      onChange={(e) => handleSubQuestionChange(subIndex, 'subQuestionNumber', e.target.value)}
                       className="form-input"
                     />
                   </div>
@@ -601,7 +601,7 @@ const AdminPanel = () => {
                     <textarea
                       name="subQuestionText"
                       value={subQ.subQuestionText}
-                      onChange={(e) => handleSubQuestionChange(subIndex, e)}
+                      onChange={(e) => handleSubQuestionChange(subIndex, 'subQuestionText', e.target.value)}
                       className="form-input"
                     />
                     {errors[`subQuestion_${subIndex}`] && <p className="error-message">{errors[`subQuestion_${subIndex}`]}</p>}
