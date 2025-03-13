@@ -14,7 +14,7 @@ const LandingPage = () => {
     const scrollToTop = () => {
       window.scrollTo({
         top: 0,
-        behavior: 'auto', // Changed to auto to avoid forced scrolling
+        // behavior: 'smooth',
       });
     };
     setTimeout(scrollToTop, 0);
