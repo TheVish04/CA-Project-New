@@ -66,7 +66,7 @@ const Navbar = () => {
           <>
             {isAdmin && <li><Link to="/admin">Admin Panel</Link></li>}
             <li><Link to="/questions">Questions</Link></li>
-            <li><Link to="/about">About</Link></li>
+            <li><Link to="/about">About Us</Link></li>
             <li><Link to="/contact">Contact</Link></li>
             <li>
               <button onClick={handleLogout} className="logout-btn">
@@ -78,7 +78,7 @@ const Navbar = () => {
           <>
             <li><Link to="/login">Login</Link></li>
             <li><Link to="/register">Register</Link></li>
-            <li><Link to="/about">About</Link></li>
+            <li><Link to="/about">About Us</Link></li>
             <li><Link to="/contact">Contact</Link></li>
           </>
         )}
