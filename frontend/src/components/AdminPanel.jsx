@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PreviewPanel from './PreviewPanel';
+import Navbar from './Navbar'; // Add Navbar import
 import DOMPurify from 'dompurify';
+import './AdminPanel.css';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -400,430 +402,397 @@ const AdminPanel = () => {
   const visibleErrors = Object.values(errors).filter((error) => error);
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Admin Panel</h1>
-      {visibleErrors.length > 0 && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <h3 className="font-bold">Validation Errors:</h3>
-          <ul className="list-disc pl-5">
-            {visibleErrors.map((error, index) => (
-              <li key={index}>{error}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <form onSubmit={editingQuestionId ? handleUpdate : handleSubmit} className="space-y-6">
-        <fieldset className="border p-4 rounded">
-          <legend className="text-lg font-semibold">General Details</legend>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block mb-1">
-                Subject:
-                <select
-                  name="subject"
-                  value={formData.subject}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Subject</option>
-                  <option value="Advanced Accounting">Advanced Accounting</option>
-                  <option value="Corporate Laws">Corporate Laws</option>
-                  <option value="Taxation">Taxation</option>
-                  <option value="Cost & Management">Cost & Management</option>
-                  <option value="Auditing">Auditing</option>
-                  <option value="Financial Management">Financial Management</option>
-                </select>
-                {errors.subject && <p className="text-red-500 text-sm">{errors.subject}</p>}
-              </label>
-            </div>
-            <div>
-              <label className="block mb-1">
-                Exam Type:
-                <select
-                  name="examType"
-                  value={formData.examType}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Exam Type</option>
-                  <option value="MTP">MTP</option>
-                  <option value="RTP">RTP</option>
-                </select>
-                {errors.examType && <p className="text-red-500 text-sm">{errors.examType}</p>}
-              </label>
-            </div>
-            <div>
-              <label className="block mb-1">
-                Year:
-                <select
-                  name="year"
-                  value={formData.year}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Year</option>
-                  <option value="2024">2024</option>
-                  <option value="2023">2023</option>
-                  <option value="2022">2022</option>
-                </select>
-                {errors.year && <p className="text-red-500 text-sm">{errors.year}</p>}
-              </label>
-            </div>
-            <div>
-              <label className="block mb-1">
-                Month:
-                <select
-                  name="month"
-                  value={formData.month}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Month</option>
-                  <option value="March">March</option>
-                  <option value="February">February</option>
-                </select>
-                {errors.month && <p className="text-red-500 text-sm">{errors.month}</p>}
-              </label>
-            </div>
-            <div>
-              <label className="block mb-1">
-                Group:
-                <select
-                  name="group"
-                  value={formData.group}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Group</option>
-                  <option value="Group I">Group I</option>
-                  <option value="Group II">Group II</option>
-                </select>
-                {errors.group && <p className="text-red-500 text-sm">{errors.group}</p>}
-              </label>
-            </div>
-            <div>
-              <label className="block mb-1">
-                Paper Name:
-                <select
-                  name="paperName"
-                  value={formData.paperName}
-                  onChange={handleChange}
-                  className="w-full p-2 border rounded"
-                  required
-                >
-                  <option value="">Select Paper</option>
-                  <option value="Paper 01">Paper 01</option>
-                  <option value="Paper 02">Paper 02</option>
-                  <option value="Paper 03">Paper 03</option>
-                  <option value="Paper 04">Paper 04</option>
-                  <option value="Paper 05">Paper 05</option>
-                  <option value="Paper 06">Paper 06</option>
-                </select>
-                {errors.paperName && <p className="text-red-500 text-sm">{errors.paperName}</p>}
-              </label>
-            </div>
-          </div>
-        </fieldset>
-
-        <fieldset className="border p-4 rounded">
-          <legend className="text-lg font-semibold">Question Details</legend>
-          <div className="space-y-4">
-            <label className="block">
-              Question Number:
-              <input
-                type="text"
-                name="questionNumber"
-                value={formData.questionNumber}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              />
-              {errors.questionNumber && <p className="text-red-500 text-sm">{errors.questionNumber}</p>}
-            </label>
-            <label className="block">
-              Question Text:
-              <textarea
-                name="questionText"
-                value={formData.questionText}
-                onChange={handleChange}
-                rows={6}
-                className="w-full p-2 border rounded"
-                placeholder="Paste HTML code for tables, or just type your question..."
-              />
-              {errors.questionText && <p className="text-red-500 text-sm">{errors.questionText}</p>}
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset className="border p-4 rounded">
-          <legend className="text-lg font-semibold">Answer (for Subjective Questions)</legend>
-          <label className="block">
-            Answer Text:
-            <textarea
-              name="answerText"
-              value={formData.answerText}
-              onChange={handleChange}
-              rows={6}
-              className="w-full p-2 border rounded"
-              placeholder="Paste HTML code for tables, or just type your answer..."
-            />
-          </label>
-        </fieldset>
-
-        <fieldset className="border p-4 rounded">
-          <legend className="text-lg font-semibold">Reference</legend>
-          <div className="space-y-4">
-            <label className="block">
-              Page Number:
-              <input
-                type="text"
-                name="pageNumber"
-                value={formData.pageNumber}
-                onChange={handleChange}
-                className="w-full p-2 border rounded"
-                required
-              />
-              {errors.pageNumber && <p className="text-red-500 text-sm">{errors.pageNumber}</p>}
-            </label>
-          </div>
-        </fieldset>
-
-        <fieldset className="border p-4 rounded">
-          <legend className="text-lg font-semibold">Sub-Questions (Optional)</legend>
-          {formData.subQuestions.map((subQ, subIndex) => (
-            <div key={subIndex} className="border p-4 rounded mb-4">
-              <label className="block mb-2">
-                Sub Question Number:
-                <input
-                  type="text"
-                  name="subQuestionNumber"
-                  value={subQ.subQuestionNumber}
-                  onChange={(e) => handleSubQuestionChange(subIndex, e)}
-                  className="w-full p-2 border rounded"
-                />
-              </label>
-              <label className="block mb-2">
-                Sub Question Text:
-                <textarea
-                  name="subQuestionText"
-                  value={subQ.subQuestionText}
-                  onChange={(e) => handleSubQuestionChange(subIndex, e)}
-                  className="w-full p-2 border rounded"
-                />
-                {errors[`subQuestion_${subIndex}`] && (
-                  <p className="text-red-500 text-sm">{errors[`subQuestion_${subIndex}`]}</p>
-                )}
-              </label>
-              <fieldset className="border p-4 rounded mt-2">
-                <legend className="text-md font-semibold">Sub-Question Options</legend>
-                {subQ.subOptions.map((subOpt, optIndex) => (
-                  <div key={optIndex} className="mb-2">
-                    <label className="block">
-                      Option {optIndex + 1}:
-                      <input
-                        type="text"
-                        name="optionText"
-                        value={subOpt.optionText}
-                        onChange={(e) => handleSubOptionChange(subIndex, optIndex, e)}
-                        className="w-full p-2 border rounded"
-                      />
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => markCorrectSubOption(subIndex, optIndex)}
-                      className="ml-2 px-2 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                    >
-                      Mark as Correct
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeSubOption(subIndex, optIndex)}
-                      className="ml-2 px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                    >
-                      Remove Option
-                    </button>
-                    {errors[`subOption_${subIndex}_${optIndex}`] && (
-                      <p className="text-red-500 text-sm">{errors[`subOption_${subIndex}_${optIndex}`]}</p>
-                    )}
-                  </div>
+    <div className="page-wrapper">
+      <Navbar /> {/* Add Navbar */}
+      <section className="admin-section">
+        <div className="admin-container">
+          <h1>Admin Panel</h1>
+          {visibleErrors.length > 0 && (
+            <div className="error">
+              <h3 className="error-title">Validation Errors:</h3>
+              <ul className="error-list">
+                {visibleErrors.map((error, index) => (
+                  <li key={index}>{error}</li>
                 ))}
-                <button
-                  type="button"
-                  onClick={() => addSubOption(subIndex)}
-                  className="mt-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                >
-                  Add Sub Option
-                </button>
-              </fieldset>
-              <button
-                type="button"
-                onClick={() => removeSubQuestion(subIndex)}
-                className="mt-2 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-              >
-                Remove This Sub Question
-              </button>
+              </ul>
             </div>
-          ))}
-          <button
-            type="button"
-            onClick={addSubQuestion}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-          >
-            Add Sub Question
-          </button>
-        </fieldset>
-
-        <div className="space-x-4">
-          <button
-            type="button"
-            onClick={handlePreview}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-            disabled={isSubmitting}
-          >
-            Preview
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Submitting...' : editingQuestionId ? 'Update' : 'Submit'}
-          </button>
-          {editingQuestionId && (
-            <button
-              type="button"
-              onClick={() => {
-                resetForm();
-                setEditingQuestionId(null);
-              }}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-              disabled={isSubmitting}
-            >
-              Cancel Edit
-            </button>
           )}
-        </div>
-      </form>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Filter Questions</h2>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <label>
-            Subject:
-            <input
-              type="text"
-              name="subject"
-              value={filters.subject}
-              onChange={handleFilterChange}
-              className="w-full p-2 border rounded"
-            />
-          </label>
-          <label>
-            Year:
-            <input
-              type="text"
-              name="year"
-              value={filters.year}
-              onChange={handleFilterChange}
-              className="w-full p-2 border rounded"
-            />
-          </label>
-          <label>
-            Question Number:
-            <input
-              type="text"
-              name="questionNumber"
-              value={filters.questionNumber}
-              onChange={handleFilterChange}
-              className="w-full p-2 border rounded"
-            />
-          </label>
-        </div>
-        <button
-          onClick={() => applyFilters(localStorage.getItem('token'))}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          Apply Filters
-        </button>
-      </div>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4">Stored Questions</h2>
-        {storedQuestions.length === 0 ? (
-          <p className="text-gray-500">No questions stored yet.</p>
-        ) : (
-          <div className="space-y-6">
-            {storedQuestions.map((question) => (
-              <div key={question.id} className="border border-gray-200 p-4 rounded-lg shadow-md">
-                <p><strong>Subject:</strong> {question.subject || 'N/A'}</p>
-                <p><strong>Exam Type:</strong> {question.examType || 'N/A'}</p>
-                <p><strong>Year:</strong> {question.year || 'N/A'}</p>
-                <p><strong>Month:</strong> {question.month || 'N/A'}</p>
-                <p><strong>Group:</strong> {question.group || 'N/A'}</p>
-                <p><strong>Paper Name:</strong> {question.paperName || 'N/A'}</p>
-                <p><strong>Question Number:</strong> {question.questionNumber || 'N/A'}</p>
-                <h3 className="text-lg font-semibold mt-2">Question Text:</h3>
-                <div
-                  className="prose prose-blue max-w-none text-black"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.questionText || 'N/A') }}
-                />
-                {question.answerText && (
-                  <>
-                    <h3 className="text-lg font-semibold mt-2">Answer Text:</h3>
-                    <div
-                      className="prose prose-blue max-w-none text-black"
-                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.answerText || 'N/A') }}
-                    />
-                  </>
-                )}
-                {question.subQuestions && question.subQuestions.length > 0 && (
-                  <div>
-                    <h3 className="text-lg font-semibold mt-2">Sub-Questions:</h3>
-                    {question.subQuestions.map((subQ, subIdx) => (
-                      <div key={subIdx} className="mt-2">
-                        <p><strong>Sub Question Number:</strong> {subQ.subQuestionNumber || 'N/A'}</p>
-                        <p><strong>Sub Question Text:</strong> {subQ.subQuestionText || 'N/A'}</p>
-                        {subQ.subOptions && subQ.subOptions.length > 0 && (
-                          <ul className="list-disc pl-5 mt-1">
-                            {subQ.subOptions.map((subOpt, optIdx) => (
-                              <li key={optIdx}>
-                                {subOpt.optionText || 'N/A'}{' '}
-                                {subOpt.isCorrect && <span className="text-green-500 font-bold">(Correct)</span>}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p><strong>Page Number:</strong> {question.pageNumber || 'N/A'}</p>
-                <div className="mt-4 space-x-4">
-                  <button
-                    onClick={() => handleEdit(question)}
-                    className="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+          <form onSubmit={editingQuestionId ? handleUpdate : handleSubmit} className="admin-form">
+            <div className="form-section">
+              <h2>General Details</h2>
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Subject:</label>
+                  <select
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
                   >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(question.id)}
-                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                    <option value="">Select Subject</option>
+                    <option value="Advanced Accounting">Advanced Accounting</option>
+                    <option value="Corporate Laws">Corporate Laws</option>
+                    <option value="Taxation">Taxation</option>
+                    <option value="Cost & Management">Cost & Management</option>
+                    <option value="Auditing">Auditing</option>
+                    <option value="Financial Management">Financial Management</option>
+                  </select>
+                  {errors.subject && <p className="error-message">{errors.subject}</p>}
+                </div>
+                <div className="form-group">
+                  <label>Exam Type:</label>
+                  <select
+                    name="examType"
+                    value={formData.examType}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
                   >
-                    Delete
-                  </button>
+                    <option value="">Select Exam Type</option>
+                    <option value="MTP">MTP</option>
+                    <option value="RTP">RTP</option>
+                  </select>
+                  {errors.examType && <p className="error-message">{errors.examType}</p>}
+                </div>
+                <div className="form-group">
+                  <label>Year:</label>
+                  <select
+                    name="year"
+                    value={formData.year}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Year</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                    <option value="2022">2022</option>
+                  </select>
+                  {errors.year && <p className="error-message">{errors.year}</p>}
+                </div>
+                <div className="form-group">
+                  <label>Month:</label>
+                  <select
+                    name="month"
+                    value={formData.month}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Month</option>
+                    <option value="March">March</option>
+                    <option value="February">February</option>
+                  </select>
+                  {errors.month && <p className="error-message">{errors.month}</p>}
+                </div>
+                <div className="form-group">
+                  <label>Group:</label>
+                  <select
+                    name="group"
+                    value={formData.group}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Group</option>
+                    <option value="Group I">Group I</option>
+                    <option value="Group II">Group II</option>
+                  </select>
+                  {errors.group && <p className="error-message">{errors.group}</p>}
+                </div>
+                <div className="form-group">
+                  <label>Paper Name:</label>
+                  <select
+                    name="paperName"
+                    value={formData.paperName}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Paper</option>
+                    <option value="Paper 01">Paper 01</option>
+                    <option value="Paper 02">Paper 02</option>
+                    <option value="Paper 03">Paper 03</option>
+                    <option value="Paper 04">Paper 04</option>
+                    <option value="Paper 05">Paper 05</option>
+                    <option value="Paper 06">Paper 06</option>
+                  </select>
+                  {errors.paperName && <p className="error-message">{errors.paperName}</p>}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            </div>
 
-      {previewVisible && <PreviewPanel data={formData} onClose={closePreview} />}
+            <div className="form-section">
+              <h2>Question Details</h2>
+              <div className="form-group">
+                <label>Question Number:</label>
+                <input
+                  type="text"
+                  name="questionNumber"
+                  value={formData.questionNumber}
+                  onChange={handleChange}
+                  className="form-input"
+                  required
+                />
+                {errors.questionNumber && <p className="error-message">{errors.questionNumber}</p>}
+              </div>
+              <div className="form-group">
+                <label>Question Text:</label>
+                <textarea
+                  name="questionText"
+                  value={formData.questionText}
+                  onChange={handleChange}
+                  rows={6}
+                  className="form-input"
+                  placeholder="Paste HTML code for tables, or just type your question..."
+                />
+                {errors.questionText && <p className="error-message">{errors.questionText}</p>}
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Answer (for Subjective Questions)</h2>
+              <div className="form-group">
+                <label>Answer Text:</label>
+                <textarea
+                  name="answerText"
+                  value={formData.answerText}
+                  onChange={handleChange}
+                  rows={6}
+                  className="form-input"
+                  placeholder="Paste HTML code for tables, or just type your answer..."
+                />
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Reference</h2>
+              <div className="form-group">
+                <label>Page Number:</label>
+                <input
+                  type="text"
+                  name="pageNumber"
+                  value={formData.pageNumber}
+                  onChange={handleChange}
+                  className="form-input"
+                  required
+                />
+                {errors.pageNumber && <p className="error-message">{errors.pageNumber}</p>}
+              </div>
+            </div>
+
+            <div className="form-section">
+              <h2>Sub-Questions (Optional)</h2>
+              {formData.subQuestions.map((subQ, subIndex) => (
+                <div key={subIndex} className="sub-question-section">
+                  <div className="form-group">
+                    <label>Sub Question Number:</label>
+                    <input
+                      type="text"
+                      name="subQuestionNumber"
+                      value={subQ.subQuestionNumber}
+                      onChange={(e) => handleSubQuestionChange(subIndex, e)}
+                      className="form-input"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Sub Question Text:</label>
+                    <textarea
+                      name="subQuestionText"
+                      value={subQ.subQuestionText}
+                      onChange={(e) => handleSubQuestionChange(subIndex, e)}
+                      className="form-input"
+                    />
+                    {errors[`subQuestion_${subIndex}`] && <p className="error-message">{errors[`subQuestion_${subIndex}`]}</p>}
+                  </div>
+                  <div className="sub-options-section">
+                    {subQ.subOptions.map((subOpt, optIndex) => (
+                      <div key={optIndex} className="form-group">
+                        <label>Option {optIndex + 1}:</label>
+                        <input
+                          type="text"
+                          name="optionText"
+                          value={subOpt.optionText}
+                          onChange={(e) => handleSubOptionChange(subIndex, optIndex, e)}
+                          className="form-input"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => markCorrectSubOption(subIndex, optIndex)}
+                          className="mark-correct-btn"
+                        >
+                          Mark as Correct
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeSubOption(subIndex, optIndex)}
+                          className="remove-btn"
+                        >
+                          Remove Option
+                        </button>
+                        {errors[`subOption_${subIndex}_${optIndex}`] && <p className="error-message">{errors[`subOption_${subIndex}_${optIndex}`]}</p>}
+                      </div>
+                    ))}
+                    <button type="button" onClick={() => addSubOption(subIndex)} className="add-btn">
+                      Add Sub Option
+                    </button>
+                  </div>
+                  <button type="button" onClick={() => removeSubQuestion(subIndex)} className="remove-btn">
+                    Remove This Sub Question
+                  </button>
+                </div>
+              ))}
+              <button type="button" onClick={addSubQuestion} className="add-btn">
+                Add Sub Question
+              </button>
+            </div>
+
+            <div className="form-actions">
+              <button
+                type="button"
+                onClick={handlePreview}
+                className="preview-btn"
+                disabled={isSubmitting}
+              >
+                Preview
+              </button>
+              <button
+                type="submit"
+                className="submit-btn"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Submitting...' : editingQuestionId ? 'Update' : 'Submit'}
+              </button>
+              {editingQuestionId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setEditingQuestionId(null);
+                  }}
+                  className="cancel-btn"
+                  disabled={isSubmitting}
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+          </form>
+
+          <div className="filter-section">
+            <h2>Filter Questions</h2>
+            <div className="filter-grid">
+              <div className="form-group">
+                <label>Subject:</label>
+                <input
+                  type="text"
+                  name="subject"
+                  value={filters.subject}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Year:</label>
+                <input
+                  type="text"
+                  name="year"
+                  value={filters.year}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Question Number:</label>
+                <input
+                  type="text"
+                  name="questionNumber"
+                  value={filters.questionNumber}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                />
+              </div>
+            </div>
+            <button onClick={() => applyFilters(localStorage.getItem('token'))} className="apply-filter-btn">
+              Apply Filters
+            </button>
+          </div>
+
+          <div className="stored-questions-section">
+            <h2>Stored Questions</h2>
+            {storedQuestions.length === 0 ? (
+              <p className="no-questions">No questions stored yet.</p>
+            ) : (
+              <div className="questions-list">
+                {storedQuestions.map((question) => (
+                  <div key={question.id} className="question-card">
+                    <p><strong>Subject:</strong> {question.subject || 'N/A'}</p>
+                    <p><strong>Exam Type:</strong> {question.examType || 'N/A'}</p>
+                    <p><strong>Year:</strong> {question.year || 'N/A'}</p>
+                    <p><strong>Month:</strong> {question.month || 'N/A'}</p>
+                    <p><strong>Group:</strong> {question.group || 'N/A'}</p>
+                    <p><strong>Paper Name:</strong> {question.paperName || 'N/A'}</p>
+                    <p><strong>Question Number:</strong> {question.questionNumber || 'N/A'}</p>
+                    <h3>Question Text:</h3>
+                    <div
+                      className="question-text"
+                      dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.questionText || 'N/A') }}
+                    />
+                    {question.answerText && (
+                      <>
+                        <h3>Answer Text:</h3>
+                        <div
+                          className="question-text"
+                          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.answerText || 'N/A') }}
+                        />
+                      </>
+                    )}
+                    {question.subQuestions && question.subQuestions.length > 0 && (
+                      <div>
+                        <h3>Sub-Questions:</h3>
+                        {question.subQuestions.map((subQ, subIdx) => (
+                          <div key={subIdx} className="sub-question">
+                            <p><strong>Sub Question Number:</strong> {subQ.subQuestionNumber || 'N/A'}</p>
+                            <p><strong>Sub Question Text:</strong> {subQ.subQuestionText || 'N/A'}</p>
+                            {subQ.subOptions && subQ.subOptions.length > 0 && (
+                              <ul className="sub-options">
+                                {subQ.subOptions.map((subOpt, optIdx) => (
+                                  <li key={optIdx}>
+                                    {subOpt.optionText || 'N/A'}{' '}
+                                    {subOpt.isCorrect && <span className="correct-answer">(Correct)</span>}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <p><strong>Page Number:</strong> {question.pageNumber || 'N/A'}</p>
+                    <div className="question-actions">
+                      <button
+                        onClick={() => handleEdit(question)}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(question.id)}
+                        className="delete-btn"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {previewVisible && <PreviewPanel data={formData} onClose={closePreview} />}
+        </div>
+      </section>
     </div>
   );
 };

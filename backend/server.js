@@ -1,7 +1,7 @@
 const express = require('express');
 const sequelize = require('./config/database');
-const User = require('./models/User'); // Changed from const { User } = require('./models/User');
-const Question = require('./models/Question'); // Changed from const { Question } = require('./models/Question');
+const User = require('./models/User');
+const Question = require('./models/Question');
 const authRoutes = require('./routes/auth');
 const questionRoutes = require('./routes/questions');
 const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware');
@@ -91,6 +91,18 @@ const initializeDatabase = async () => {
       const adminUsername = process.env.ADMIN_USERNAME || 'admin';
       const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
       const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+      // Validate admin credentials
+      if (!adminUsername || adminUsername.length < 3) {
+        throw new Error('Admin username must be at least 3 characters long');
+      }
+      if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+        throw new Error('Invalid admin email format');
+      }
+      if (!adminPassword || adminPassword.length < 6) {
+        throw new Error('Admin password must be at least 6 characters long');
+      }
+
       const hashedPassword = await bcrypt.hash(adminPassword, 10);
       const defaultAdmin = await User.create({
         username: adminUsername,
@@ -101,7 +113,7 @@ const initializeDatabase = async () => {
       console.log('Default admin created:', {
         username: defaultAdmin.username,
         email: defaultAdmin.email,
-        password: adminPassword,
+        role: defaultAdmin.role,
       });
     } else {
       console.log('Admin user already exists, skipping creation.');
@@ -109,9 +121,13 @@ const initializeDatabase = async () => {
       console.log('Existing admin details:', {
         username: existingAdmin.username,
         email: existingAdmin.email,
-        passwordHash: existingAdmin.password,
+        role: existingAdmin.role,
       });
     }
+
+    // Log total number of users for debugging
+    const userCount = await User.count();
+    console.log(`Total users in database: ${userCount}`);
 
     // Log total number of questions for debugging
     const questionCount = await Question.count();
@@ -131,7 +147,7 @@ const initializeDatabase = async () => {
 
 // Example protected admin route
 app.get('/api/admin', authMiddleware, adminMiddleware, (req, res) => {
-  res.json({ message: 'Welcome to the admin panel', user: req.user.username });
+  res.json({ message: 'Welcome to the admin panel', user: req.user.username, role: req.user.role });
 });
 
 // Health check endpoint with detailed status
@@ -152,6 +168,8 @@ app.use((err, req, res, next) => {
     stack: err.stack,
     message: err.message,
     status: err.status || 500,
+    path: req.path,
+    method: req.method,
   });
   res.status(err.status || 500).json({
     error: 'Something went wrong!',

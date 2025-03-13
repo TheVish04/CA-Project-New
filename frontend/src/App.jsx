@@ -1,28 +1,60 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import LandingPage from './pages/LandingPage';
-import About from './pages/About';
-import Contact from './pages/Contact';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Questions from './pages/Questions'; // Ensure this is imported
-import Navbar from './components/Navbar';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import LandingPage from './components/LandingPage';
+import Login from './components/Login';
+import Register from './components/Register';
+import About from './components/About';
+import Contact from './components/Contact';
+import Questions from './components/Questions';
+import AdminPanel from './components/AdminPanel';
 
-function App() {
+const ProtectedRoute = ({ element, requireAdmin = false }) => {
+  const token = localStorage.getItem('token');
+  let isAdmin = false;
+
+  if (token) {
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      if (payload.role === 'admin') {
+        isAdmin = true;
+      }
+    } catch (error) {
+      console.error('Error decoding token:', error);
+    }
+  }
+
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/" />;
+  }
+
+  return element;
+};
+
+const App = () => {
   return (
     <Router>
-      <Navbar /> {/* Navbar should appear on all pages */}
       <Routes>
         <Route path="/" element={<LandingPage />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/questions" element={<Questions />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route
+          path="/questions"
+          element={<ProtectedRoute element={<Questions />} />}
+        />
+        <Route
+          path="/admin"
+          element={<ProtectedRoute element={<AdminPanel />} requireAdmin={true} />}
+        />
+        <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
   );
-}
+};
 
 export default App;

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
+import Navbar from './Navbar'; // Import Navbar from the same directory
 import './Questions.css';
 
 const Questions = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({ subject: '', examType: '' });
+  const [filters, setFilters] = useState({ subject: '', examType: '', questionNumber: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [showAnswers, setShowAnswers] = useState(false);
   const questionsPerPage = 5;
@@ -39,10 +40,18 @@ const Questions = () => {
     }
   }, [navigate]);
 
+  // Generate unique question numbers for the current subject
+  const getUniqueQuestionNumbers = () => {
+    const subjectFiltered = questions.filter((q) => !filters.subject || q.subject === filters.subject);
+    const uniqueQuestionNumbers = [...new Set(subjectFiltered.map((q) => q.questionNumber))];
+    return uniqueQuestionNumbers.sort(); // Sort for better UX
+  };
+
   const filteredQuestions = questions.filter((q) => {
     return (
       (!filters.subject || q.subject === filters.subject) &&
-      (!filters.examType || q.examType === filters.examType)
+      (!filters.examType || q.examType === filters.examType) &&
+      (!filters.questionNumber || q.questionNumber === filters.questionNumber)
     );
   });
 
@@ -54,115 +63,138 @@ const Questions = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">CA Exam Questions</h1>
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>Error: {error}</p>
-        </div>
-      )}
-      <div className="mb-6 flex space-x-4">
-        <label className="flex items-center">
-          Filter by Subject:
-          <select
-            value={filters.subject}
-            onChange={(e) => setFilters({ ...filters, subject: e.target.value })}
-            className="ml-2 p-2 border rounded"
-          >
-            <option value="">All</option>
-            <option value="Advanced Accounting">Advanced Accounting</option>
-            <option value="Corporate Laws">Corporate Laws</option>
-            <option value="Taxation">Taxation</option>
-            <option value="Cost & Management">Cost & Management</option>
-            <option value="Auditing">Auditing</option>
-            <option value="Financial Management">Financial Management</option>
-          </select>
-        </label>
-        <label className="flex items-center">
-          Filter by Exam Type:
-          <select
-            value={filters.examType}
-            onChange={(e) => setFilters({ ...filters, examType: e.target.value })}
-            className="ml-2 p-2 border rounded"
-          >
-            <option value="">All</option>
-            <option value="MTP">MTP</option>
-            <option value="RTP">RTP</option>
-          </select>
-        </label>
-        <label className="flex items-center">
-          <input
-            type="checkbox"
-            checked={showAnswers}
-            onChange={(e) => setShowAnswers(e.target.checked)}
-            className="mr-2"
-          />
-          Show Answers
-        </label>
-      </div>
-      {filteredQuestions.length === 0 && !error && <p>No questions available.</p>}
-      {currentQuestions.length > 0 && (
-        <>
-          {currentQuestions.map((question) => (
-            <div
-              key={question.id}
-              className="mb-6 p-4 border rounded-lg shadow"
-            >
-              <h2 className="text-xl font-semibold">
-                {question.subject} - {question.examType} ({question.year})
-                {question.month && `, ${question.month}`}
-                {question.group && `, ${question.group}`}
-                {question.paperName && `, ${question.paperName}`}
-              </h2>
-              {question.questionNumber && (
-                <p className="mt-2"><strong>Question Number:</strong> {question.questionNumber}</p>
-              )}
-              <p className="mt-2"><strong>Question:</strong></p>
-              <div className="mt-2" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.questionText) }} />
-              {showAnswers && question.answerText && (
-                <>
-                  <p className="mt-2"><strong>Answer:</strong></p>
-                  <div className="mt-2" dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.answerText) }} />
-                </>
-              )}
-              {question.pdfFile && (
-                <p className="mt-2"><strong>PDF:</strong> <a href={question.pdfFile} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">{question.pdfFile}</a></p>
-              )}
-              {question.pageNumber && (
-                <p className="mt-2"><strong>Page:</strong> {question.pageNumber}</p>
-              )}
-              {question.subQuestions && question.subQuestions.length > 0 && (
-                <>
-                  <h3 className="mt-4 text-lg font-semibold">Sub-Questions</h3>
-                  {question.subQuestions.map((subQ, index) => (
-                    <div key={index} className="mt-2">
-                      <p><strong>Sub-Question {subQ.subQuestionNumber}:</strong> {subQ.subQuestionText}</p>
-                      <ul className="list-disc pl-5 mt-2">
-                        {subQ.subOptions.map((opt, optIndex) => (
-                          <li key={optIndex} className="ml-4">
-                            {opt.optionText} {opt.isCorrect && <span className="text-green-500">(Correct)</span>}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ))}
-                </>
-              )}
+    <div className="page-wrapper">
+      <Navbar /> {/* Add Navbar here */}
+      <section className="questions-section">
+        <div className="questions-container">
+          <h1>CA Exam Questions</h1>
+          {error && (
+            <div className="error">
+              <p>Error: {error}</p>
             </div>
-          ))}
-          <div className="flex justify-center space-x-2 mt-4">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-              <button
-                key={number}
-                onClick={() => paginate(number)}
-                className={`px-3 py-1 border rounded ${currentPage === number ? 'bg-gray-200' : 'bg-white hover:bg-gray-100'}`}
+          )}
+          <div className="filters">
+            <div className="filter-group">
+              <label>Filter by Subject:</label>
+              <select
+                value={filters.subject}
+                onChange={(e) => setFilters({ ...filters, subject: e.target.value, questionNumber: '' })}
               >
-                {number}
-              </button>
-            ))}
+                <option value="">All</option>
+                <option value="Advanced Accounting">Advanced Accounting</option>
+                <option value="Corporate Laws">Corporate Laws</option>
+                <option value="Taxation">Taxation</option>
+                <option value="Cost & Management">Cost & Management</option>
+                <option value="Auditing">Auditing</option>
+                <option value="Financial Management">Financial Management</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Filter by Exam Type:</label>
+              <select
+                value={filters.examType}
+                onChange={(e) => setFilters({ ...filters, examType: e.target.value })}
+              >
+                <option value="">All</option>
+                <option value="MTP">MTP</option>
+                <option value="RTP">RTP</option>
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>Filter by Question No.:</label>
+              <select
+                value={filters.questionNumber}
+                onChange={(e) => setFilters({ ...filters, questionNumber: e.target.value })}
+              >
+                <option value="">All</option>
+                {getUniqueQuestionNumbers().map((qn) => (
+                  <option key={qn} value={qn}>
+                    {qn}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="filter-group">
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showAnswers}
+                  onChange={(e) => setShowAnswers(e.target.checked)}
+                />
+                Show Answers
+              </label>
+            </div>
           </div>
-        </>
-      )}
+          {filteredQuestions.length === 0 && !error && <p className="no-questions">No questions available.</p>}
+          {currentQuestions.length > 0 && (
+            <>
+              <div className="questions-list">
+                {currentQuestions.map((question) => (
+                  <div key={question.id} className="question-card">
+                    <h2>
+                      {question.subject} - {question.examType} ({question.year})
+                      {question.month && `, ${question.month}`}
+                      {question.group && `, ${question.group}`}
+                      {question.paperName && `, ${question.paperName}`}
+                    </h2>
+                    {question.questionNumber && (
+                      <p><strong>Question Number:</strong> {question.questionNumber}</p>
+                    )}
+                    <p><strong>Question:</strong></p>
+                    <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.questionText) }} />
+                    {showAnswers && question.answerText && (
+                      <>
+                        <p><strong>Answer:</strong></p>
+                        <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.answerText) }} />
+                      </>
+                    )}
+                    {question.pdfFile && (
+                      <p>
+                        <strong>PDF:</strong>{' '}
+                        <a href={question.pdfFile} target="_blank" rel="noopener noreferrer">
+                          {question.pdfFile}
+                        </a>
+                      </p>
+                    )}
+                    {question.pageNumber && (
+                      <p><strong>Page:</strong> {question.pageNumber}</p>
+                    )}
+                    {question.subQuestions && question.subQuestions.length > 0 && (
+                      <>
+                        <h3>Sub-Questions</h3>
+                        {question.subQuestions.map((subQ, index) => (
+                          <div key={index} className="sub-question">
+                            <p><strong>Sub-Question {subQ.subQuestionNumber}:</strong> {subQ.subQuestionText}</p>
+                            <ul>
+                              {subQ.subOptions.map((opt, optIndex) => (
+                                <li key={optIndex}>
+                                  {opt.optionText}{' '}
+                                  {opt.isCorrect && <span className="correct-answer">(Correct)</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div className="pagination">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
+                  <button
+                    key={number}
+                    onClick={() => paginate(number)}
+                    className={currentPage === number ? 'active' : ''}
+                  >
+                    {number}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-console.log('Defining User model...');
 const User = sequelize.define('User', {
   username: {
     type: DataTypes.STRING,
@@ -12,6 +11,9 @@ const User = sequelize.define('User', {
     type: DataTypes.STRING,
     allowNull: false,
     unique: true,
+    validate: {
+      isEmail: true,
+    },
   },
   password: {
     type: DataTypes.STRING,
@@ -19,9 +21,12 @@ const User = sequelize.define('User', {
   },
   role: {
     type: DataTypes.STRING,
-    defaultValue: 'user',
+    allowNull: false,
+    defaultValue: 'user', // Default role for new users
+    validate: {
+      isIn: [['user', 'admin']], // Restrict to valid roles
+    },
   },
 });
 
-console.log('User model defined:', User);
-module.exports = User; // Correct: Export the User model object
+module.exports = User;
