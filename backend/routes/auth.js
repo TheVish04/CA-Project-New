@@ -7,146 +7,148 @@ const jwt = require('jsonwebtoken');
 const { authMiddleware } = require('../middleware/authMiddleware'); // Import authMiddleware for protected routes
 require('dotenv').config();
 
+// In login route:
 router.post('/login', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    console.log('Login attempt:', { username, email });
+    const { email, password } = req.body;
 
-    // Validate input
-    if (!username && !email) {
-      return res.status(400).json({ error: 'Username or email is required' });
+    // Validate email format
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format' });
     }
-    if (!password) {
+
+    // Validate password presence
+    if (!password || password.trim().length < 1) {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Validate JWT_SECRET
-    if (!process.env.JWT_SECRET) {
-      throw new Error('JWT_SECRET is not defined in environment variables');
-    }
-
-    // Find user by username or email
+    // Find user by email only
     const user = await User.findOne({
-      where: {
-        [Sequelize.Op.or]: [
-          { username: username || '' },
-          { email: email || '' },
-        ],
-      },
+      where: { email: email.trim().toLowerCase() }
     });
 
     if (!user) {
-      console.log('User not found:', { username, email });
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      console.log('Password mismatch for user:', user.username);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Create JWT token (moved inside the route handler)
     const token = jwt.sign(
-      { id: user.id, role: user.role, username: user.username },
+      { id: user.id, role: user.role, fullName: user.fullName },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
     );
 
-    console.log('Login successful for user:', {
-      username: user.username,
-      role: user.role,
-      token: token.substring(0, 50) + '...', // Log partial token for security
-    });
     res.json({ token });
+    
   } catch (error) {
-    console.error('Login error:', {
-      message: error.message,
-      stack: error.stack,
-      requestBody: req.body,
-    });
-    res.status(500).json({ error: 'Failed to login', details: error.message });
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
 router.post('/register', async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const { fullName, email, password } = req.body;
 
-    // Validate input
-    if (!username || username.length < 3) {
-      return res.status(400).json({ error: 'Username must be at least 3 characters long' });
-    }
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ error: 'Invalid email format' });
-    }
-    if (!password || password.length < 6) {
-      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
-    }
+    // Validate inputs
+    const sanitizedName = (fullName || '').trim();
+    const sanitizedEmail = (email || '').trim().toLowerCase();
 
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      where: {
-        [Sequelize.Op.or]: [
-          { username },
-          { email },
-        ],
-      },
-    });
-
-    if (existingUser) {
+    // Name validation
+    if (!sanitizedName || sanitizedName.length < 3) {
       return res.status(400).json({ 
-        error: 'User already exists', 
-        details: existingUser.username === username ? 'Username already in use' : 'Email already in use'
+        error: 'Full name must be at least 3 characters',
+        field: 'fullName'
       });
     }
 
-    // Hash password and create user with role 'user'
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Email validation
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedEmail)) {
+      return res.status(400).json({
+        error: 'Invalid email format',
+        field: 'email'
+      });
+    }
+
+    // Password validation
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters',
+        field: 'password'
+      });
+    }
+
+    // Check existing user
+    const existingUser = await User.findOne({
+      where: { email: sanitizedEmail }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({  // Proper conflict status
+        error: 'Email already registered',
+        redirect: '/login'
+      });
+    }
+
+    // Secure password hashing
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // Create user
     const newUser = await User.create({
-      username,
-      email,
+      fullName: sanitizedName,
+      email: sanitizedEmail,
       password: hashedPassword,
-      role: 'user', // Only users can register
+      role: 'user'
     });
 
-    console.log('User registered successfully:', {
-      username: newUser.username,
-      email: newUser.email,
-      role: newUser.role,
+    // Return success response
+    res.status(201).json({ 
+      message: 'Registration successful',
+      user: {
+        id: newUser.id,
+        email: newUser.email
+      }
     });
 
-    res.status(201).json({ message: 'User registered successfully' });
   } catch (error) {
-    console.error('Registration error:', {
-      message: error.message,
-      stack: error.stack,
-      requestBody: req.body,
+    console.error('Registration error:', error);
+    res.status(500).json({ 
+      error: 'Registration failed',
+      details: process.env.NODE_ENV === 'development' ? error.message : null
     });
-    res.status(500).json({ error: 'Failed to register user', details: error.message });
   }
 });
 
-// Protected route to get current user info
+// In /me route
 router.get('/me', authMiddleware, async (req, res) => {
-  try {
-    const user = await User.findByPk(req.user.id, {
-      attributes: ['id', 'username', 'email', 'role'], // Exclude sensitive fields like password
-    });
+try {
+// Add proper error handling for missing user
+if (!req.user?.id) {
+return res.status(401).json({ error: 'Invalid authentication' });
+}
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+const user = await User.findByPk(req.user.id, {
+attributes: ['id', 'fullName', 'email', 'role', 'createdAt'] // Add createdAt
+});
 
-    res.json(user);
-  } catch (error) {
-    console.error('Error in /me route:', {
-      message: error.message,
-      stack: error.stack,
-    });
-    res.status(500).json({ error: 'Failed to fetch user info', details: error.message });
-  }
+if (!user) {
+return res.status(404).json({ error: 'User not found' });
+}
+
+res.json(user);
+} catch (error) {
+console.error('Error in /me route:', {
+message: error.message,
+stack: error.stack,
+});
+res.status(500).json({ error: 'Failed to fetch user info', details: error.message });
+}
 });
 
 module.exports = router;

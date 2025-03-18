@@ -47,6 +47,24 @@
   .error {
     color: red;
     text-align: center;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: rgba(255, 0, 0, 0.1);
+    border-radius: 4px;
+  }
+  .redirect-btn {
+    background-color: #1a2a44;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+  }
+  .redirect-btn:hover {
+    background-color: #00b4d8;
   }
   .auth-form a {
     color: #00b4d8;
@@ -55,3 +73,27 @@
   .auth-form a:hover {
     text-decoration: underline;
   }
+
+.password-strength {
+  margin-top: 5px;
+}
+
+.strength-bar {
+  height: 8px;
+  background-color: #e0e0e0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
+.strength-text {
+  font-size: 12px;
+  margin: 0;
+  text-align: right;
+}

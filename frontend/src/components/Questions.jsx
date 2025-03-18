@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import Navbar from './Navbar';
-import PreviewPanel from './PreviewPanel'; // Import PreviewPanel
+import PreviewPanel from './PreviewPanel'; // We'll keep this import for now
 import './Questions.css';
 
 const Questions = () => {
@@ -90,12 +90,14 @@ const Questions = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  // We'll modify the rendering of question cards to remove the preview button
   return (
     <div className="page-wrapper">
       <Navbar />
-      <section className="questions-section">
+      <div className="questions-section">
         <div className="questions-container">
-          <h1>CA Exam Questions</h1>
+          <h1>Question Papers</h1>
+          
           {error && (
             <div className="error">
               <p>Error: {error}</p>
@@ -240,12 +242,7 @@ const Questions = () => {
                         ))}
                       </>
                     )}
-                    <button
-                      onClick={() => handlePreview(question.id)}
-                      className="preview-btn"
-                    >
-                      Preview
-                    </button>
+                    {/* Remove the preview button completely */}
                   </div>
                 ))}
               </div>
@@ -263,8 +260,10 @@ const Questions = () => {
             </>
           )}
         </div>
-      </section>
-      {previewOpen && (
+      </div>
+      
+      {/* Keep the PreviewPanel component for now, but it won't be used */}
+      {previewOpen && selectedQuestion && (
         <PreviewPanel data={selectedQuestion} onClose={handleClosePreview} />
       )}
     </div>

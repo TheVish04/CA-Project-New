@@ -86,44 +86,7 @@ const initializeDatabase = async () => {
     console.log('Tables in database:', tables);
 
     // Check if an admin user exists, create one if not
-    const adminCount = await User.count({ where: { role: 'admin' } });
-    if (adminCount === 0) {
-      const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-
-      // Validate admin credentials
-      if (!adminUsername || adminUsername.length < 3) {
-        throw new Error('Admin username must be at least 3 characters long');
-      }
-      if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
-        throw new Error('Invalid admin email format');
-      }
-      if (!adminPassword || adminPassword.length < 6) {
-        throw new Error('Admin password must be at least 6 characters long');
-      }
-
-      const hashedPassword = await bcrypt.hash(adminPassword, 10);
-      const defaultAdmin = await User.create({
-        username: adminUsername,
-        email: adminEmail,
-        password: hashedPassword,
-        role: 'admin',
-      });
-      console.log('Default admin created:', {
-        username: defaultAdmin.username,
-        email: defaultAdmin.email,
-        role: defaultAdmin.role,
-      });
-    } else {
-      console.log('Admin user already exists, skipping creation.');
-      const existingAdmin = await User.findOne({ where: { role: 'admin' } });
-      console.log('Existing admin details:', {
-        username: existingAdmin.username,
-        email: existingAdmin.email,
-        role: existingAdmin.role,
-      });
-    }
+    await checkAndCreateAdmin();
 
     // Log total number of users for debugging
     const userCount = await User.count();
@@ -142,6 +105,52 @@ const initializeDatabase = async () => {
       stack: err.stack,
     });
     throw err;
+  }
+};
+
+// Separate function to check and create admin user
+const checkAndCreateAdmin = async () => {
+  try {
+    const adminCount = await User.count({ 
+      where: { role: 'admin' } 
+    });
+
+    if (adminCount === 0) {
+      // Validate admin credentials from env
+      const adminFullName = process.env.ADMIN_FULL_NAME || 'Admin User';
+      const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+
+      if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
+        throw new Error('Invalid admin email format');
+      }
+      if (!adminPassword || adminPassword.length < 6) {
+        throw new Error('Admin password must be at least 6 characters long');
+      }
+
+      const admin = await User.create({
+        fullName: adminFullName,
+        email: adminEmail,
+        password: await bcrypt.hash(adminPassword, 12),
+        role: 'admin'
+      });
+      console.log('Admin user created:', {
+        fullName: admin.fullName,
+        email: admin.email,
+        role: admin.role
+      });
+    } else {
+      console.log('Admin user already exists, skipping creation.');
+      const existingAdmin = await User.findOne({ where: { role: 'admin' } });
+      console.log('Existing admin details:', {
+        fullName: existingAdmin.fullName,
+        email: existingAdmin.email,
+        role: existingAdmin.role,
+      });
+    }
+  } catch (error) {
+    console.error('Admin initialization error:', error);
+    throw error;
   }
 };
 

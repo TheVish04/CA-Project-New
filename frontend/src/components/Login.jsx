@@ -5,7 +5,7 @@ import Navbar from './Navbar';
 import './Login.css';
 
 const Login = () => {
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -45,11 +45,11 @@ const Login = () => {
           {error && <p className="error">{error}</p>}
           <form onSubmit={handleSubmit}>
             <div>
-              <label>Username:</label>
+              <label>Email:</label>
               <input
-                type="text"
-                name="username"
-                value={credentials.username}
+                type="email"
+                name="email"
+                value={credentials.email}
                 onChange={handleChange}
                 required
               />

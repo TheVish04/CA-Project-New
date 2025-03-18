@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import './Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [user, setUser] = useState(null);
@@ -42,10 +43,10 @@ const Navbar = () => {
     }
   };
 
-  // Call updateAuthState only once on mount to verify the token
+  // Call updateAuthState on mount AND when location changes
   useEffect(() => {
     updateAuthState();
-  }, []);
+  }, [location.pathname]); // This ensures auth state is checked on every route change
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -59,6 +60,9 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="nav-title">
         <Link to="/">Chartered Accountants</Link>
+        {isLoggedIn && user?.fullName && (
+          <span className="user-greeting">Hello, {user.fullName}</span>
+        )}
       </div>
       <ul className="nav-links">
         <li><Link to="/">Home</Link></li>

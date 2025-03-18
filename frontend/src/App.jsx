@@ -14,10 +14,12 @@ const ProtectedRoute = ({ element, requireAdmin = false }) => {
 
   if (token) {
     try {
+      // In ProtectedRoute component:
       const payload = JSON.parse(atob(token.split('.')[1]));
       if (payload.role === 'admin') {
         isAdmin = true;
       }
+      // Remove username parsing
     } catch (error) {
       console.error('Error decoding token:', error);
     }
