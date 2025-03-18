@@ -18,6 +18,7 @@ npm install -D tailwindcss @tailwindcss/vite
 npm install react-pdf
 npm install aos
 npm install axios
+npm install framer-motion react-spring aos
 
 # backend
 npm init -y

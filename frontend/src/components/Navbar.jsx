@@ -1,93 +1,155 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import './Navbar.css';
 
 const Navbar = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const updateAuthState = async () => {
+  useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
       try {
-        // Fetch user info from /api/auth/me
-        const response = await fetch('http://localhost:5000/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-          setIsAdmin(userData.role === 'admin');
-        } else {
-          throw new Error('Failed to fetch user info');
-        }
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setIsAdmin(payload.role === 'admin');
       } catch (error) {
-        console.error('Error fetching user info:', error);
-        // Token might be invalid or expired; clear it and update state
-        setIsLoggedIn(false);
-        setIsAdmin(false);
-        setUser(null);
-        localStorage.removeItem('token');
-        navigate('/login');
+        console.error('Error decoding token:', error);
       }
     } else {
       setIsLoggedIn(false);
       setIsAdmin(false);
-      setUser(null);
     }
-  };
-
-  // Call updateAuthState on mount AND when location changes
-  useEffect(() => {
-    updateAuthState();
-  }, [location.pathname]); // This ensures auth state is checked on every route change
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsLoggedIn(false);
     setIsAdmin(false);
-    setUser(null);
     navigate('/');
   };
 
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
   return (
-    <nav className="navbar">
-      <div className="nav-title">
-        <Link to="/">Chartered Accountants</Link>
-        {isLoggedIn && user?.fullName && (
-          <span className="user-greeting">Hello, {user.fullName}</span>
-        )}
+    <motion.nav 
+      className="navbar"
+      initial={{ y: -100 }}
+      animate={{ y: 0 }}
+      transition={{ duration: 0.5, type: 'spring', stiffness: 120 }}
+    >
+      <div className="navbar-container">
+        <Link to="/" className="navbar-logo">
+          <motion.span 
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            CA Exam Platform
+          </motion.span>
+        </Link>
+
+        <div className="menu-icon" onClick={toggleMenu}>
+          <div className={`hamburger ${isMenuOpen ? 'active' : ''}`}>
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+
+        <motion.ul 
+          className={`nav-menu ${isMenuOpen ? 'active' : ''}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <motion.li 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+              Home
+            </Link>
+          </motion.li>
+          
+          <motion.li 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link to="/about" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+              About
+            </Link>
+          </motion.li>
+          
+          <motion.li 
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Link to="/contact" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+              Contact
+            </Link>
+          </motion.li>
+          
+          {isLoggedIn ? (
+            <>
+              <motion.li 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link to="/questions" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Questions
+                </Link>
+              </motion.li>
+              
+              {isAdmin && (
+                <motion.li 
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link to="/admin" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                    Admin
+                  </Link>
+                </motion.li>
+              )}
+              
+              <motion.li 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <button onClick={handleLogout} className="nav-button logout-btn">
+                  Logout
+                </button>
+              </motion.li>
+            </>
+          ) : (
+            <>
+              <motion.li 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link to="/login" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+                  Login
+                </Link>
+              </motion.li>
+              
+              <motion.li 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Link to="/register" className="nav-button register-btn" onClick={() => setIsMenuOpen(false)}>
+                  Register
+                </Link>
+              </motion.li>
+            </>
+          )}
+        </motion.ul>
       </div>
-      <ul className="nav-links">
-        <li><Link to="/">Home</Link></li>
-        {isLoggedIn ? (
-          <>
-            {isAdmin && <li><Link to="/admin">Admin Panel</Link></li>}
-            <li><Link to="/questions">Questions</Link></li>
-            <li><Link to="/about">About Us</Link></li>
-            <li><Link to="/contact">Contact</Link></li>
-            <li>
-              <button onClick={handleLogout} className="logout-btn">
-                Logout
-              </button>
-            </li>
-          </>
-        ) : (
-          <>
-            <li><Link to="/login">Login</Link></li>
-            <li><Link to="/register">Register</Link></li>
-            <li><Link to="/about">About Us</Link></li>
-            <li><Link to="/contact">Contact</Link></li>
-          </>
-        )}
-      </ul>
-    </nav>
+    </motion.nav>
   );
 };
 

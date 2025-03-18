@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { motion } from 'framer-motion';
 import Navbar from './Navbar';
 import './Register.css';
 
@@ -11,12 +12,12 @@ const Register = () => {
   const [passwordMessage, setPasswordMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-
+  
+  // Clear error when user starts typing again
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     
-    // Clear error when user starts typing again
     if (error) setError('');
     
     // Check password strength when password field changes
@@ -25,6 +26,7 @@ const Register = () => {
     }
   };
 
+  // Password strength checker remains the same
   const checkPasswordStrength = (password) => {
     // Initialize strength as 0
     let strength = 0;
@@ -69,6 +71,7 @@ const Register = () => {
     setPasswordMessage(message);
   };
 
+  // Form validation remains the same
   const validateForm = () => {
     // Full name validation
     if (!formData.fullName.trim()) {
@@ -93,6 +96,7 @@ const Register = () => {
     return true;
   };
 
+  // Form submission with enhanced error handling
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -132,27 +136,55 @@ const Register = () => {
   };
 
   return (
-    <div>
+    <div className="register-page">
       <Navbar />
-      <div className="auth-container">
-        <div className="auth-form">
-          <h2>Register</h2>
+      <motion.div 
+        className="auth-container"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <motion.div 
+          className="auth-form"
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+        >
+          <motion.h2
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            Create Your Account
+          </motion.h2>
+          
           {error && (
-            <div className="error">
+            <motion.div 
+              className="error"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
               <p>{error}</p>
               {error.includes('already registered') && (
-                <button 
+                <motion.button 
                   onClick={() => navigate('/login')}
                   className="redirect-btn"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Go to Login
-                </button>
+                </motion.button>
               )}
-            </div>
+            </motion.div>
           )}
           
           <form onSubmit={handleSubmit}>
-            <div>
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
               <label htmlFor="fullName">Full Name:</label>
               <input
                 id="fullName"
@@ -162,9 +194,15 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 autoComplete="name"
+                placeholder="Enter your full name"
               />
-            </div>
-            <div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
               <label htmlFor="email">Email:</label>
               <input
                 id="email"
@@ -176,8 +214,13 @@ const Register = () => {
                 autoComplete="email"
                 placeholder="example@gmail.com"
               />
-            </div>
-            <div>
+            </motion.div>
+            
+            <motion.div
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+            >
               <label htmlFor="password">Password:</label>
               <input
                 id="password"
@@ -187,15 +230,22 @@ const Register = () => {
                 onChange={handleChange}
                 required
                 autoComplete="new-password"
+                placeholder="Create a strong password"
               />
               
-              {/* Password strength indicator */}
+              {/* Password strength indicator with animation */}
               {formData.password && (
-                <div className="password-strength">
+                <motion.div 
+                  className="password-strength"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
                   <div className="strength-bar">
-                    <div 
+                    <motion.div 
                       className="strength-fill" 
-                      style={{ 
+                      initial={{ width: 0 }}
+                      animate={{ 
                         width: `${passwordStrength}%`,
                         backgroundColor: 
                           passwordStrength <= 20 ? '#ff4d4d' :
@@ -203,21 +253,45 @@ const Register = () => {
                           passwordStrength <= 60 ? '#ffdd00' :
                           passwordStrength <= 80 ? '#00cc44' : '#00aa88'
                       }}
-                    ></div>
+                      transition={{ duration: 0.5 }}
+                    />
                   </div>
                   <p className="strength-text">Password Strength: {passwordMessage}</p>
-                </div>
+                </motion.div>
               )}
-            </div>
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Registering...' : 'Register'}
-            </button>
-            <p className="auth-link">
+            </motion.div>
+            
+            <motion.button 
+              type="submit" 
+              disabled={isSubmitting}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.7 }}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="register-button"
+            >
+              {isSubmitting ? (
+                <span className="loading-spinner">
+                  <span className="spinner"></span>
+                  Registering...
+                </span>
+              ) : (
+                'Create Account'
+              )}
+            </motion.button>
+            
+            <motion.p 
+              className="auth-link"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8 }}
+            >
               Already have an account? <Link to="/login">Login here</Link>
-            </p>
+            </motion.p>
           </form>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
 };
