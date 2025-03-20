@@ -9,6 +9,9 @@ const Login = () => {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleChange = (e) => {
     setCredentials({ ...credentials, [e.target.name]: e.target.value });
   };
@@ -56,13 +59,21 @@ const Login = () => {
             </div>
             <div>
               <label>Password:</label>
-              <input
-                type="password"
-                name="password"
-                value={credentials.password}
-                onChange={handleChange}
-                required
-              />
+              <div className="password-container">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  name="password"
+                  value={credentials.password}
+                  onChange={handleChange}
+                  required
+                />
+                <span 
+                  className="toggle-password" 
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </span>
+              </div>
             </div>
             <button type="submit">Login</button>
           </form>

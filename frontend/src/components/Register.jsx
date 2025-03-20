@@ -17,6 +17,10 @@ const Register = () => {
   const [passwordMessage, setPasswordMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+
+  // State for toggling password visibility
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Clear error when user starts typing again
   const handleChange = (e) => {
@@ -138,7 +142,7 @@ const Register = () => {
         password: formData.password
       };
       
-      const response = await axios.post('http://localhost:5000/api/auth/register', dataToSend);
+      await axios.post('http://localhost:5000/api/auth/register', dataToSend);
       
       // Registration successful
       navigate('/login');
@@ -207,16 +211,26 @@ const Register = () => {
             
             <div>
               <label htmlFor="password">Password</label>
-              <input
-                type="password"
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                placeholder="Create a password"
-                required
-              />
+              <div className="password-container">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  id="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  placeholder="Create a password"
+                  required
+                />
+                {/* Toggle show/hide password */}
+                <span 
+                  className="toggle-password" 
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? 'Hide' : 'Show'}
+                </span>
+              </div>
               
+              {/* Password strength bar */}
               {formData.password && (
                 <div className="password-strength">
                   <div className="strength-bar">
@@ -237,15 +251,24 @@ const Register = () => {
             
             <div>
               <label htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                placeholder="Confirm your password"
-                required
-              />
+              <div className="password-container">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  placeholder="Confirm your password"
+                  required
+                />
+                {/* Toggle show/hide confirm password */}
+                <span 
+                  className="toggle-password" 
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? 'Hide' : 'Show'}
+                </span>
+              </div>
             </div>
             
             <button type="submit" disabled={isSubmitting}>

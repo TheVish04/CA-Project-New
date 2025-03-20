@@ -208,3 +208,19 @@
     padding: 12px;
   }
 }
+
+/* Password container for toggle icon */
+.password-container {
+  position: relative;
+}
+
+.toggle-password {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  user-select: none;
+  color: #0096c7;
+  font-weight: 500;
+}
