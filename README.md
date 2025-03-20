@@ -28,6 +28,7 @@ npm install bcrypt jsonwebtoken
 npm install multer
 npm install joi
 npm install dotenv
+npm install nodemailer otp-generator
 
 # NOTES :-
 1) To input tables we have to insert the html code snippet of html tag in input box.

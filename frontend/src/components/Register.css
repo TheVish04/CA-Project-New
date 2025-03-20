@@ -224,3 +224,78 @@
   color: #0096c7;
   font-weight: 500;
 }
+
+/* OTP verification styles */
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.primary-button {
+  flex: 2;
+}
+
+.secondary-button {
+  flex: 1;
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background-color: #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.resend-timer {
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 5px;
+  text-align: right;
+}
+
+.verification-success {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 10px;
+  border-radius: 8px;
+  text-align: center;
+  margin: 15px 0;
+}
+
+.verified-email-note {
+  font-size: 0.85rem;
+  color: #28a745;
+  margin-top: 5px;
+}
+
+.back-button {
+  background-color: transparent;
+  color: #0096c7;
+  border: 1px solid #0096c7;
+  margin-top: 15px;
+  font-size: 0.9rem;
+}
+
+.back-button:hover {
+  background-color: rgba(0, 150, 199, 0.1);
+  transform: none;
+  box-shadow: none;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top-color: #fff;
+  animation: spin 1s ease-in-out infinite;
+  display: inline-block;
+}

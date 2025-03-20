@@ -6,6 +6,20 @@ import Navbar from './Navbar';
 import './Register.css';
 
 const Register = () => {
+  // Step tracking
+  const [step, setStep] = useState(1); // Step 1: Email verification, Step 2: Registration
+  
+  // Email verification states
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  
+  // Registration form states
   const [formData, setFormData] = useState({ 
     fullName: '', 
     email: '', 
@@ -16,11 +30,107 @@ const Register = () => {
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [passwordMessage, setPasswordMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
-
-  // State for toggling password visibility
+  
+  // Password visibility states
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
+  const navigate = useNavigate();
+  
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+  
+  // Handle email input change
+  const handleEmailChange = (e) => {
+    setEmail(e.target.value);
+    setOtpError('');
+  };
+  
+  // Handle OTP input change
+  const handleOtpChange = (e) => {
+    setOtp(e.target.value);
+    setOtpError('');
+  };
+  
+  // Send OTP to email
+  const handleSendOtp = async () => {
+    // Validate email (must be Gmail)
+    if (!email.trim() || !email.trim().toLowerCase().endsWith('@gmail.com')) {
+      setOtpError('Please enter a valid Gmail address');
+      return;
+    }
+    
+    setSendingOtp(true);
+    setOtpError('');
+    
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/send-otp', { email: email.trim() });
+      
+      setOtpSent(true);
+      setCountdown(60); // 60 seconds countdown for resend
+      
+      // Show success message
+      setOtpError('');
+    } catch (err) {
+      console.error('Error sending OTP:', err);
+      
+      if (err.response?.data?.error) {
+        setOtpError(err.response.data.error);
+        
+        // If email already registered, suggest login
+        if (err.response.data.redirect === '/login') {
+          setTimeout(() => {
+            navigate('/login');
+          }, 3000);
+        }
+      } else {
+        setOtpError('Failed to send OTP. Please try again.');
+      }
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+  
+  // Verify OTP
+  const handleVerifyOtp = async () => {
+    if (!otp.trim()) {
+      setOtpError('Please enter the OTP');
+      return;
+    }
+    
+    setVerifyingOtp(true);
+    setOtpError('');
+    
+    try {
+      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', { 
+        email: email.trim(),
+        otp: otp.trim() 
+      });
+      
+      setOtpVerified(true);
+      
+      // Move to step 2 and pre-fill email
+      setStep(2);
+      setFormData(prev => ({ ...prev, email: email.trim() }));
+      
+    } catch (err) {
+      console.error('Error verifying OTP:', err);
+      
+      if (err.response?.data?.error) {
+        setOtpError(err.response.data.error);
+      } else {
+        setOtpError('Failed to verify OTP. Please try again.');
+      }
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
   
   // Clear error when user starts typing again
   const handleChange = (e) => {
@@ -93,15 +203,9 @@ const Register = () => {
       return false;
     }
     
-    // Email validation
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setError('Please enter a valid email address');
+    // Email validation - should be pre-filled and verified
+    if (formData.email !== email) {
+      setError('Email mismatch with verified email');
       return false;
     }
     
@@ -135,11 +239,12 @@ const Register = () => {
     setIsSubmitting(true);
     
     try {
-      // Only send necessary data to the backend
+      // Send verified email along with registration data
       const dataToSend = {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
-        password: formData.password
+        password: formData.password,
+        verifiedEmail: email.trim() // Include verified email for backend validation
       };
       
       await axios.post('http://localhost:5000/api/auth/register', dataToSend);
@@ -151,141 +256,251 @@ const Register = () => {
       
       if (err.response && err.response.data && err.response.data.error) {
         setError(err.response.data.error);
+        
+        // If email verification required, go back to step 1
+        if (err.response.data.redirect === '/register') {
+          setStep(1);
+        }
       } else {
-        setError('Registration failed. Please try again later.');
+        setError('Registration failed. Please try again.');
       }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Get strength color based on password strength
+  // Get color for password strength bar
   const getStrengthColor = () => {
-    if (passwordStrength <= 20) return '#e74c3c';
-    if (passwordStrength <= 40) return '#e67e22';
-    if (passwordStrength <= 60) return '#f1c40f';
-    if (passwordStrength <= 80) return '#2ecc71';
-    return '#27ae60';
+    if (passwordStrength <= 20) return '#e74c3c'; // Very Weak - Red
+    if (passwordStrength <= 40) return '#e67e22'; // Weak - Orange
+    if (passwordStrength <= 60) return '#f1c40f'; // Medium - Yellow
+    if (passwordStrength <= 80) return '#2ecc71'; // Strong - Light Green
+    return '#27ae60'; // Very Strong - Dark Green
   };
 
-  return (
-    <div className="register-page">
-      <Navbar />
-      <div className="auth-container">
-        <motion.div 
-          className="auth-form"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <h2>Create Account</h2>
-          
-          {error && <div className="error">{error}</div>}
-          
-          <form onSubmit={handleSubmit}>
+  // Render OTP verification step
+  const renderOtpStep = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2>Email Verification</h2>
+      {otpError && <p className="error">{otpError}</p>}
+      
+      <form>
+        <div>
+          <label>Gmail Address:</label>
+          <input
+            type="email"
+            value={email}
+            onChange={handleEmailChange}
+            placeholder="Enter your Gmail address"
+            disabled={otpSent && !otpVerified}
+            required
+          />
+        </div>
+        
+        {!otpSent ? (
+          <button 
+            type="button" 
+            onClick={handleSendOtp}
+            disabled={sendingOtp || !email.trim()}
+          >
+            {sendingOtp ? (
+              <span className="loading-spinner">
+                <span className="spinner"></span>
+                Sending...
+              </span>
+            ) : (
+              'Send OTP'
+            )}
+          </button>
+        ) : !otpVerified ? (
+          <>
             <div>
-              <label htmlFor="fullName">Full Name</label>
+              <label>Enter OTP:</label>
               <input
                 type="text"
-                id="fullName"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                placeholder="Enter your full name"
+                value={otp}
+                onChange={handleOtpChange}
+                placeholder="Enter 6-digit OTP"
+                maxLength={6}
                 required
               />
+              {countdown > 0 && (
+                <p className="resend-timer">Resend OTP in {countdown}s</p>
+              )}
             </div>
             
-            <div>
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="Enter your email"
-                required
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="password">Password</label>
-              <div className="password-container">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Create a password"
-                  required
-                />
-                {/* Toggle show/hide password */}
-                <span 
-                  className="toggle-password" 
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </span>
-              </div>
+            <div className="button-group">
+              <button 
+                type="button" 
+                onClick={handleVerifyOtp}
+                disabled={verifyingOtp || !otp.trim()}
+                className="primary-button"
+              >
+                {verifyingOtp ? (
+                  <span className="loading-spinner">
+                    <span className="spinner"></span>
+                    Verifying...
+                  </span>
+                ) : (
+                  'Verify OTP'
+                )}
+              </button>
               
-              {/* Password strength bar */}
-              {formData.password && (
-                <div className="password-strength">
-                  <div className="strength-bar">
-                    <div 
-                      className="strength-fill" 
-                      style={{ 
-                        width: `${passwordStrength}%`, 
-                        backgroundColor: getStrengthColor() 
-                      }}
-                    ></div>
-                  </div>
-                  <div className="strength-text" style={{ color: getStrengthColor() }}>
-                    {passwordMessage}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div>
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <div className="password-container">
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  placeholder="Confirm your password"
-                  required
-                />
-                {/* Toggle show/hide confirm password */}
-                <span 
-                  className="toggle-password" 
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              {countdown === 0 && (
+                <button 
+                  type="button" 
+                  onClick={handleSendOtp}
+                  disabled={sendingOtp}
+                  className="secondary-button"
                 >
-                  {showConfirmPassword ? 'Hide' : 'Show'}
-                </span>
-              </div>
-            </div>
-            
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? (
-                <>
-                  <span className="spinner"></span> Registering...
-                </>
-              ) : (
-                'Register'
+                  Resend OTP
+                </button>
               )}
-            </button>
-          </form>
-          
-          <div className="auth-link">
-            Already have an account? <Link to="/login">Login</Link>
+            </div>
+          </>
+        ) : (
+          <div className="verification-success">
+            <p>Email verified successfully!</p>
           </div>
-        </motion.div>
+        )}
+      </form>
+      
+      <p className="auth-link">
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
+    </motion.div>
+  );
+
+  // Render registration form step
+  const renderRegistrationStep = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2>Create Account</h2>
+      {error && <p className="error">{error}</p>}
+      
+      <form onSubmit={handleSubmit}>
+        <div>
+          <label>Full Name:</label>
+          <input
+            type="text"
+            name="fullName"
+            value={formData.fullName}
+            onChange={handleChange}
+            placeholder="Enter your full name"
+            required
+          />
+        </div>
+        
+        <div>
+          <label>Email:</label>
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            disabled={true} // Email is pre-filled and verified
+            required
+          />
+          <p className="verified-email-note">Email verified ✓</p>
+        </div>
+        
+        <div>
+          <label>Password:</label>
+          <div className="password-container">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              placeholder="Create a strong password"
+              required
+            />
+            <span 
+              className="toggle-password" 
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </span>
+          </div>
+          
+          {formData.password && (
+            <div className="password-strength">
+              <div className="strength-bar">
+                <div 
+                  className="strength-fill" 
+                  style={{ 
+                    width: `${passwordStrength}%`,
+                    backgroundColor: getStrengthColor()
+                  }}
+                ></div>
+              </div>
+              <p className="strength-text">{passwordMessage}</p>
+            </div>
+          )}
+        </div>
+        
+        <div>
+          <label>Confirm Password:</label>
+          <div className="password-container">
+            <input
+              type={showConfirmPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              placeholder="Confirm your password"
+              required
+            />
+            <span 
+              className="toggle-password" 
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? 'Hide' : 'Show'}
+            </span>
+          </div>
+        </div>
+        
+        <button 
+          type="submit" 
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <span className="loading-spinner">
+              <span className="spinner"></span>
+              Registering...
+            </span>
+          ) : (
+            'Register'
+          )}
+        </button>
+      </form>
+      
+      <p className="auth-link">
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
+      
+      <button 
+        type="button" 
+        onClick={() => setStep(1)}
+        className="back-button"
+      >
+        Back to Email Verification
+      </button>
+    </motion.div>
+  );
+
+  return (
+    <div>
+      <Navbar />
+      <div className="auth-container">
+        <div className="auth-form">
+          {step === 1 ? renderOtpStep() : renderRegistrationStep()}
+        </div>
       </div>
     </div>
   );

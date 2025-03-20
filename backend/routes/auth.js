@@ -4,8 +4,88 @@ const Sequelize = require('sequelize');
 const User = require('../models/User');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { authMiddleware } = require('../middleware/authMiddleware'); // Import authMiddleware for protected routes
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { generateOTP, verifyOTP, sendOTPEmail } = require('../services/otpService');
 require('dotenv').config();
+
+// Send OTP for registration
+router.post('/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Validate email format and ensure it's a Gmail address
+    if (!email || !/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(email)) {
+      return res.status(400).json({ 
+        error: 'Please provide a valid Gmail address',
+        field: 'email'
+      });
+    }
+    
+    // Check if email already exists
+    const existingUser = await User.findOne({
+      where: { email: email.trim().toLowerCase() }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({
+        error: 'Email already registered',
+        redirect: '/login'
+      });
+    }
+    
+    // Generate OTP
+    const otp = generateOTP(email);
+    
+    // Send OTP via email
+    const emailResult = await sendOTPEmail(email, otp);
+    
+    if (!emailResult.success) {
+      return res.status(500).json({ 
+        error: 'Failed to send OTP email',
+        details: emailResult.error
+      });
+    }
+    
+    res.json({ 
+      message: 'OTP sent successfully',
+      email
+    });
+    
+  } catch (error) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ 
+      error: 'Failed to send OTP',
+      details: process.env.NODE_ENV === 'development' ? error.message : null
+    });
+  }
+});
+
+// Verify OTP
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ error: 'Email and OTP are required' });
+    }
+    
+    const verification = verifyOTP(email, otp);
+    
+    if (!verification.valid) {
+      return res.status(400).json({ error: verification.message });
+    }
+    
+    res.json({ 
+      message: verification.message,
+      verified: true,
+      email
+    });
+    
+  } catch (error) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ error: 'Failed to verify OTP' });
+  }
+});
 
 // In login route:
 router.post('/login', async (req, res) => {
@@ -54,7 +134,15 @@ router.post('/login', async (req, res) => {
 
 router.post('/register', async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    const { fullName, email, password, verifiedEmail } = req.body;
+
+    // Ensure email was verified
+    if (email !== verifiedEmail) {
+      return res.status(400).json({ 
+        error: 'Email verification required',
+        redirect: '/register'
+      });
+    }
 
     // Validate inputs
     const sanitizedName = (fullName || '').trim();
