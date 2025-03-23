@@ -23,6 +23,7 @@ const Questions = () => {
   const [showAnswers, setShowAnswers] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false); // State for modal visibility
   const [selectedQuestion, setSelectedQuestion] = useState(null); // State for selected question
+  const [individualShowAnswers, setIndividualShowAnswers] = useState({}); // Track individual question answer visibility
   const questionsPerPage = 5;
 
   useEffect(() => {
@@ -91,6 +92,14 @@ const Questions = () => {
   const totalPages = Math.ceil(filteredQuestions.length / questionsPerPage);
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  // Handle individual question answer visibility toggle
+  const toggleIndividualAnswer = (questionId) => {
+    setIndividualShowAnswers(prev => ({
+      ...prev,
+      [questionId]: !prev[questionId]
+    }));
+  };
 
   // We'll modify the rendering of question cards to remove the preview button
   return (
@@ -279,7 +288,7 @@ const Questions = () => {
                     )}
                     <p><strong>Question:</strong></p>
                     <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.questionText) }} />
-                    {showAnswers && question.answerText && (
+                    {(showAnswers || individualShowAnswers[question.id]) && question.answerText && (
                       <>
                         <p><strong>Answer:</strong></p>
                         <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.answerText) }} />
@@ -296,6 +305,16 @@ const Questions = () => {
                     {question.pageNumber && (
                       <p><strong>Page:</strong> {question.pageNumber}</p>
                     )}
+                    <div className="filter-group individual-answer-toggle">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={individualShowAnswers[question.id] || false}
+                          onChange={() => toggleIndividualAnswer(question.id)}
+                        />
+                        Show Answer for this Question
+                      </label>
+                    </div>
                     {question.subQuestions && question.subQuestions.length > 0 && (
                       <>
                         <h3>Sub-Questions</h3>

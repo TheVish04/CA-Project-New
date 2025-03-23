@@ -76,6 +76,18 @@
   .filter-group input[type="checkbox"] {
     margin-right: 5px;
   }
+
+  .individual-answer-toggle {
+    margin-top: 10px;
+    padding: 5px 0;
+    border-top: 1px solid #eee;
+  }
+
+  .individual-answer-toggle label {
+    font-size: 0.9rem;
+    color: #555;
+    cursor: pointer;
+  }
   
   /* Questions List */
   .questions-list {
