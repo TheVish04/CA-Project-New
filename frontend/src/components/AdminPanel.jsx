@@ -9,11 +9,11 @@ const AdminPanel = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     subject: '',
-    examType: '',
+    paperType: '',
     year: '',
     month: '',
-    group: '',
-    paperName: '',
+    examStage: '',
+    paperNo: '',
     questionNumber: '',
     questionText: '',
     answerText: '',
@@ -25,14 +25,15 @@ const AdminPanel = () => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [storedQuestions, setStoredQuestions] = useState([]);
   const [editingQuestionId, setEditingQuestionId] = useState(null);
-  // Updated filters state with additional criteria for advanced filtering & search
+  // Updated filters state with new criteria for advanced filtering & search
   const [filters, setFilters] = useState({
     subject: '',
     year: '',
     questionNumber: '',
-    examType: '',
+    paperType: '',
     month: '',
-    group: '',
+    examStage: '',
+    paperNo: '',
     search: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -176,8 +177,8 @@ const AdminPanel = () => {
       case 'subject':
         if (!value || value === '') error = 'Subject is required';
         break;
-      case 'examType':
-        if (!value || value === '') error = 'Exam Type is required';
+      case 'paperType':
+        if (!value || value === '') error = 'Paper Type is required';
         break;
       case 'year':
         if (!value || value === '') error = 'Year is required';
@@ -185,11 +186,13 @@ const AdminPanel = () => {
       case 'month':
         if (!value || value === '') error = 'Month is required';
         break;
-      case 'group':
-        if (!value || value === '' || value === 'Select Group') error = 'Group is required';
+      case 'examStage':
+        if (!value || value === '' || value === 'Select Exam Stage') error = 'Exam Stage is required';
         break;
-      case 'paperName':
-        if (!value || value === '' || value === 'Select Paper') error = 'Paper Name is required';
+      case 'paperNo':
+        if (formData.examStage === 'Foundation' && (!value || value === '' || value === 'Select Paper')) {
+          error = 'Paper No. is required for Foundation stage';
+        }
         break;
       case 'questionNumber':
         if (!value) error = 'Question Number is required';
@@ -218,7 +221,14 @@ const AdminPanel = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    ['subject', 'examType', 'year', 'month', 'group', 'paperName', 'questionNumber', 'questionText', 'pageNumber'].forEach((field) => {
+    const fieldsToValidate = ['subject', 'paperType', 'year', 'month', 'examStage', 'questionNumber', 'questionText', 'pageNumber'];
+    
+    // Add paperNo to validation only if examStage is Foundation
+    if (formData.examStage === 'Foundation') {
+      fieldsToValidate.push('paperNo');
+    }
+    
+    fieldsToValidate.forEach((field) => {
       validateField(field, formData[field]);
       if (errors[field]) newErrors[field] = errors[field];
     });
@@ -248,11 +258,11 @@ const AdminPanel = () => {
   const resetForm = () => {
     setFormData({
       subject: '',
-      examType: '',
+      paperType: '',
       year: '',
       month: '',
-      group: '',
-      paperName: '',
+      examStage: '',
+      paperNo: '',
       questionNumber: '',
       questionText: '',
       answerText: '',
@@ -277,11 +287,11 @@ const AdminPanel = () => {
 
     const sanitizedData = {
       subject: formData.subject,
-      examType: formData.examType,
+      paperType: formData.paperType,
       year: formData.year,
       month: formData.month,
-      group: formData.group,
-      paperName: formData.paperName,
+      examStage: formData.examStage,
+      paperNo: formData.paperNo,
       questionNumber: formData.questionNumber,
       questionText: DOMPurify.sanitize(formData.questionText),
       answerText: DOMPurify.sanitize(formData.answerText || ''),
@@ -333,11 +343,11 @@ const AdminPanel = () => {
     const token = localStorage.getItem('token');
     const sanitizedData = {
       subject: formData.subject,
-      examType: formData.examType,
+      paperType: formData.paperType,
       year: formData.year,
       month: formData.month,
-      group: formData.group,
-      paperName: formData.paperName,
+      examStage: formData.examStage,
+      paperNo: formData.paperNo,
       questionNumber: formData.questionNumber,
       questionText: DOMPurify.sanitize(formData.questionText),
       answerText: DOMPurify.sanitize(formData.answerText || ''),
@@ -376,11 +386,11 @@ const AdminPanel = () => {
   const handleEdit = (question) => {
     setFormData({
       subject: question.subject || '',
-      examType: question.examType || '',
+      paperType: question.paperType || '',
       year: question.year || '',
       month: question.month || '',
-      group: question.group || '',
-      paperName: question.paperName || '',
+      examStage: question.examStage || '',
+      paperNo: question.paperNo || '',
       questionNumber: question.questionNumber || '',
       questionText: question.questionText || '',
       answerText: question.answerText || '',
@@ -437,6 +447,32 @@ const AdminPanel = () => {
               <h2>General Details</h2>
               <div className="form-grid">
                 <div className="form-group">
+                  <label>Exam Stage:</label>
+                  <select
+                    name="examStage"
+                    value={formData.examStage}
+                    onChange={(e) => {
+                      // Reset subject and paperNo when exam stage changes
+                      const newExamStage = e.target.value;
+                      setFormData(prev => ({
+                        ...prev,
+                        examStage: newExamStage,
+                        subject: '',
+                        paperNo: ''
+                      }));
+                      validateField('examStage', newExamStage);
+                    }}
+                    className="form-input"
+                    required
+                  >
+                    <option value="">Select Exam Stage</option>
+                    <option value="Foundation">Foundation</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Final">Final</option>
+                  </select>
+                  {errors.examStage && <p className="error-message">{errors.examStage}</p>}
+                </div>
+                <div className="form-group">
                   <label>Subject:</label>
                   <select
                     name="subject"
@@ -446,29 +482,67 @@ const AdminPanel = () => {
                     required
                   >
                     <option value="">Select Subject</option>
-                    <option value="Advanced Accounting">Advanced Accounting</option>
-                    <option value="Corporate Laws">Corporate Laws</option>
-                    <option value="Taxation">Taxation</option>
-                    <option value="Cost & Management">Cost & Management</option>
-                    <option value="Auditing">Auditing</option>
-                    <option value="Financial Management">Financial Management</option>
+                    {formData.examStage === 'Foundation' ? (
+                      // Foundation subjects
+                      <>
+                        <option value="Principles and Practices of Accounting">Principles and Practices of Accounting</option>
+                        <option value="Business Law">Business Law</option>
+                        <option value="Business Correspondence and Reporting">Business Correspondence and Reporting</option>
+                        <option value="Business Mathematics">Business Mathematics</option>
+                        <option value="Logical Reasoning">Logical Reasoning</option>
+                        <option value="Statistics">Statistics</option>
+                        <option value="Business Economics">Business Economics</option>
+                        <option value="Business and Commercial Knowledge">Business and Commercial Knowledge</option>
+                      </>
+                    ) : formData.examStage === 'Intermediate' ? (
+                      // Intermediate subjects
+                      <>
+                        <option value="Advanced Accounting">Advanced Accounting</option>
+                        <option value="Corporate Laws">Corporate Laws</option>
+                        <option value="Cost and Management Accounting">Cost and Management Accounting</option>
+                        <option value="Taxation">Taxation</option>
+                        <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
+                        <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                      </>
+                    ) : formData.examStage === 'Final' ? (
+                      // Final subjects
+                      <>
+                        <option value="Financial Reporting">Financial Reporting</option>
+                        <option value="Advanced Financial Management">Advanced Financial Management</option>
+                        <option value="Advanced Auditing">Advanced Auditing</option>
+                        <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
+                        <option value="Indirect Tax Laws">Indirect Tax Laws</option>
+                        <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                      </>
+                    ) : (
+                      // Default subjects when no exam stage is selected
+                      <>
+                        <option value="Advanced Accounting">Advanced Accounting</option>
+                        <option value="Corporate Laws">Corporate Laws</option>
+                        <option value="Taxation">Taxation</option>
+                        <option value="Cost & Management">Cost & Management</option>
+                        <option value="Auditing">Auditing</option>
+                        <option value="Financial Management">Financial Management</option>
+                      </>
+                    )}
                   </select>
                   {errors.subject && <p className="error-message">{errors.subject}</p>}
                 </div>
                 <div className="form-group">
-                  <label>Exam Type:</label>
+                  <label>Paper Type:</label>
                   <select
-                    name="examType"
-                    value={formData.examType}
+                    name="paperType"
+                    value={formData.paperType}
                     onChange={handleChange}
                     className="form-input"
                     required
                   >
-                    <option value="">Select Exam Type</option>
+                    <option value="">Select Paper Type</option>
                     <option value="MTP">MTP</option>
                     <option value="RTP">RTP</option>
+                    <option value="PYQS">PYQS</option>
                   </select>
-                  {errors.examType && <p className="error-message">{errors.examType}</p>}
+                  {errors.paperType && <p className="error-message">{errors.paperType}</p>}
                 </div>
                 <div className="form-group">
                   <label>Year:</label>
@@ -496,45 +570,40 @@ const AdminPanel = () => {
                     required
                   >
                     <option value="">Select Month</option>
-                    <option value="March">March</option>
+                    <option value="January">January</option>
                     <option value="February">February</option>
+                    <option value="March">March</option>
+                    <option value="April">April</option>
+                    <option value="May">May</option>
+                    <option value="June">June</option>
+                    <option value="July">July</option>
+                    <option value="August">August</option>
+                    <option value="September">September</option>
+                    <option value="October">October</option>
+                    <option value="November">November</option>
+                    <option value="December">December</option>
                   </select>
                   {errors.month && <p className="error-message">{errors.month}</p>}
                 </div>
-                <div className="form-group">
-                  <label>Group:</label>
-                  <select
-                    name="group"
-                    value={formData.group}
-                    onChange={handleChange}
-                    className="form-input"
-                    required
-                  >
-                    <option value="">Select Group</option>
-                    <option value="Group I">Group I</option>
-                    <option value="Group II">Group II</option>
-                  </select>
-                  {errors.group && <p className="error-message">{errors.group}</p>}
-                </div>
-                <div className="form-group">
-                  <label>Paper Name:</label>
-                  <select
-                    name="paperName"
-                    value={formData.paperName}
-                    onChange={handleChange}
-                    className="form-input"
-                    required
-                  >
-                    <option value="">Select Paper</option>
-                    <option value="Paper 01">Paper 01</option>
-                    <option value="Paper 02">Paper 02</option>
-                    <option value="Paper 03">Paper 03</option>
-                    <option value="Paper 04">Paper 04</option>
-                    <option value="Paper 05">Paper 05</option>
-                    <option value="Paper 06">Paper 06</option>
-                  </select>
-                  {errors.paperName && <p className="error-message">{errors.paperName}</p>}
-                </div>
+                {formData.examStage === 'Foundation' && (
+                  <div className="form-group">
+                    <label>Paper No.:</label>
+                    <select
+                      name="paperNo"
+                      value={formData.paperNo}
+                      onChange={handleChange}
+                      className="form-input"
+                      required
+                    >
+                      <option value="">Select Paper</option>
+                      <option value="Paper 1">Paper 1</option>
+                      <option value="Paper 2">Paper 2</option>
+                      <option value="Paper 3">Paper 3</option>
+                      <option value="Paper 4">Paper 4</option>
+                    </select>
+                    {errors.paperNo && <p className="error-message">{errors.paperNo}</p>}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -700,6 +769,20 @@ const AdminPanel = () => {
             <h2>Filter Questions</h2>
             <div className="filter-grid">
               <div className="form-group">
+                <label>Exam Stage:</label>
+                <select
+                  name="examStage"
+                  value={filters.examStage}
+                  onChange={handleFilterChange}
+                  className="form-input"
+                >
+                  <option value="">All</option>
+                  <option value="Foundation">Foundation</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Final">Final</option>
+                </select>
+              </div>
+              <div className="form-group">
                 <label>Subject:</label>
                 <input
                   type="text"
@@ -730,35 +813,59 @@ const AdminPanel = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Exam Type:</label>
-                <input
-                  type="text"
-                  name="examType"
-                  value={filters.examType}
+                <label>Paper Type:</label>
+                <select
+                  name="paperType"
+                  value={filters.paperType}
                   onChange={handleFilterChange}
                   className="form-input"
-                />
+                >
+                  <option value="">All</option>
+                  <option value="MTP">MTP</option>
+                  <option value="RTP">RTP</option>
+                  <option value="PYQS">PYQS</option>
+                </select>
               </div>
               <div className="form-group">
                 <label>Month:</label>
-                <input
-                  type="text"
+                <select
                   name="month"
                   value={filters.month}
                   onChange={handleFilterChange}
                   className="form-input"
-                />
+                >
+                  <option value="">All</option>
+                  <option value="January">January</option>
+                  <option value="February">February</option>
+                  <option value="March">March</option>
+                  <option value="April">April</option>
+                  <option value="May">May</option>
+                  <option value="June">June</option>
+                  <option value="July">July</option>
+                  <option value="August">August</option>
+                  <option value="September">September</option>
+                  <option value="October">October</option>
+                  <option value="November">November</option>
+                  <option value="December">December</option>
+                </select>
               </div>
-              <div className="form-group">
-                <label>Group:</label>
-                <input
-                  type="text"
-                  name="group"
-                  value={filters.group}
-                  onChange={handleFilterChange}
-                  className="form-input"
-                />
-              </div>
+              {filters.examStage === 'Foundation' && (
+                <div className="form-group">
+                  <label>Paper No.:</label>
+                  <select
+                    name="paperNo"
+                    value={filters.paperNo}
+                    onChange={handleFilterChange}
+                    className="form-input"
+                  >
+                    <option value="">All</option>
+                    <option value="Paper 1">Paper 1</option>
+                    <option value="Paper 2">Paper 2</option>
+                    <option value="Paper 3">Paper 3</option>
+                    <option value="Paper 4">Paper 4</option>
+                  </select>
+                </div>
+              )}
               <div className="form-group">
                 <label>Search Keyword:</label>
                 <input
@@ -785,11 +892,11 @@ const AdminPanel = () => {
                 {storedQuestions.map((question) => (
                   <div key={question.id} className="question-card">
                     <p><strong>Subject:</strong> {question.subject || 'N/A'}</p>
-                    <p><strong>Exam Type:</strong> {question.examType || 'N/A'}</p>
+                    <p><strong>Paper Type:</strong> {question.paperType || 'N/A'}</p>
                     <p><strong>Year:</strong> {question.year || 'N/A'}</p>
                     <p><strong>Month:</strong> {question.month || 'N/A'}</p>
-                    <p><strong>Group:</strong> {question.group || 'N/A'}</p>
-                    <p><strong>Paper Name:</strong> {question.paperName || 'N/A'}</p>
+                    <p><strong>Exam Stage:</strong> {question.examStage || 'N/A'}</p>
+                    {question.paperNo && <p><strong>Paper No.:</strong> {question.paperNo || 'N/A'}</p>}
                     <p><strong>Question Number:</strong> {question.questionNumber || 'N/A'}</p>
                     <h3>Question Text:</h3>
                     <div

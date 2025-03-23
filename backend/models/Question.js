@@ -6,7 +6,7 @@ const Question = sequelize.define('Question', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  examType: {
+  paperType: {
     type: DataTypes.STRING,
     allowNull: false,
   },
@@ -18,13 +18,13 @@ const Question = sequelize.define('Question', {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  group: {
+  examStage: {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  paperName: {
+  paperNo: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
   },
   questionNumber: {
     type: DataTypes.STRING,

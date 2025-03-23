@@ -9,13 +9,14 @@ const Questions = () => {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState([]);
   const [error, setError] = useState(null);
-  // Updated filters state with additional criteria
+  // Updated filters state with new criteria
   const [filters, setFilters] = useState({
     subject: '',
-    examType: '',
+    paperType: '',
     questionNumber: '',
     month: '',
-    group: '',
+    examStage: '',
+    paperNo: '',
     search: '',
   });
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,10 +76,11 @@ const Questions = () => {
   const filteredQuestions = questions.filter((q) => {
     return (
       (!filters.subject || q.subject === filters.subject) &&
-      (!filters.examType || q.examType === filters.examType) &&
+      (!filters.paperType || q.paperType === filters.paperType) &&
       (!filters.questionNumber || q.questionNumber === filters.questionNumber) &&
       (!filters.month || q.month === filters.month) &&
-      (!filters.group || q.group === filters.group) &&
+      (!filters.examStage || q.examStage === filters.examStage) &&
+      (!filters.paperNo || q.paperNo === filters.paperNo) &&
       (!filters.search || (q.questionText && q.questionText.toLowerCase().includes(filters.search.toLowerCase())))
     );
   });
@@ -107,29 +109,88 @@ const Questions = () => {
           {/* Filters Section */}
           <div className="filters">
             <div className="filter-group">
+              <label>Filter by Exam Stage:</label>
+              <select
+                value={filters.examStage}
+                onChange={(e) => {
+                  // Reset subject and paperNo when exam stage changes
+                  setFilters({ 
+                    ...filters, 
+                    examStage: e.target.value, 
+                    subject: '',
+                    paperNo: '',
+                    questionNumber: '' 
+                  });
+                }}
+              >
+                <option value="">All</option>
+                <option value="Foundation">Foundation</option>
+                <option value="Intermediate">Intermediate</option>
+                <option value="Final">Final</option>
+              </select>
+            </div>
+            <div className="filter-group">
               <label>Filter by Subject:</label>
               <select
                 value={filters.subject}
                 onChange={(e) => setFilters({ ...filters, subject: e.target.value, questionNumber: '' })}
               >
                 <option value="">All</option>
-                <option value="Advanced Accounting">Advanced Accounting</option>
-                <option value="Corporate Laws">Corporate Laws</option>
-                <option value="Taxation">Taxation</option>
-                <option value="Cost & Management">Cost & Management</option>
-                <option value="Auditing">Auditing</option>
-                <option value="Financial Management">Financial Management</option>
+                {filters.examStage === 'Foundation' ? (
+                  // Foundation subjects
+                  <>
+                    <option value="Principles and Practices of Accounting">Principles and Practices of Accounting</option>
+                    <option value="Business Law">Business Law</option>
+                    <option value="Business Correspondence and Reporting">Business Correspondence and Reporting</option>
+                    <option value="Business Mathematics">Business Mathematics</option>
+                    <option value="Logical Reasoning">Logical Reasoning</option>
+                    <option value="Statistics">Statistics</option>
+                    <option value="Business Economics">Business Economics</option>
+                    <option value="Business and Commercial Knowledge">Business and Commercial Knowledge</option>
+                  </>
+                ) : filters.examStage === 'Intermediate' ? (
+                  // Intermediate subjects
+                  <>
+                    <option value="Advanced Accounting">Advanced Accounting</option>
+                    <option value="Corporate Laws">Corporate Laws</option>
+                    <option value="Cost and Management Accounting">Cost and Management Accounting</option>
+                    <option value="Taxation">Taxation</option>
+                    <option value="Auditing and Code of Ethics">Auditing and Code of Ethics</option>
+                    <option value="Financial and Strategic Management">Financial and Strategic Management</option>
+                  </>
+                ) : filters.examStage === 'Final' ? (
+                  // Final subjects
+                  <>
+                    <option value="Financial Reporting">Financial Reporting</option>
+                    <option value="Advanced Financial Management">Advanced Financial Management</option>
+                    <option value="Advanced Auditing">Advanced Auditing</option>
+                    <option value="Direct and International Tax Laws">Direct and International Tax Laws</option>
+                    <option value="Indirect Tax Laws">Indirect Tax Laws</option>
+                    <option value="Integrated Business Solutions">Integrated Business Solutions</option>
+                  </>
+                ) : (
+                  // Default subjects when no exam stage is selected
+                  <>
+                    <option value="Advanced Accounting">Advanced Accounting</option>
+                    <option value="Corporate Laws">Corporate Laws</option>
+                    <option value="Taxation">Taxation</option>
+                    <option value="Cost & Management">Cost & Management</option>
+                    <option value="Auditing">Auditing</option>
+                    <option value="Financial Management">Financial Management</option>
+                  </>
+                )}
               </select>
             </div>
             <div className="filter-group">
-              <label>Filter by Exam Type:</label>
+              <label>Filter by Paper Type:</label>
               <select
-                value={filters.examType}
-                onChange={(e) => setFilters({ ...filters, examType: e.target.value })}
+                value={filters.paperType}
+                onChange={(e) => setFilters({ ...filters, paperType: e.target.value })}
               >
                 <option value="">All</option>
                 <option value="MTP">MTP</option>
                 <option value="RTP">RTP</option>
+                <option value="PYQS">PYQS</option>
               </select>
             </div>
             <div className="filter-group">
@@ -139,21 +200,35 @@ const Questions = () => {
                 onChange={(e) => setFilters({ ...filters, month: e.target.value })}
               >
                 <option value="">All</option>
-                <option value="March">March</option>
+                <option value="January">January</option>
                 <option value="February">February</option>
+                <option value="March">March</option>
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June">June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+                <option value="October">October</option>
+                <option value="November">November</option>
+                <option value="December">December</option>
               </select>
             </div>
-            <div className="filter-group">
-              <label>Filter by Group:</label>
-              <select
-                value={filters.group}
-                onChange={(e) => setFilters({ ...filters, group: e.target.value })}
-              >
-                <option value="">All</option>
-                <option value="Group I">Group I</option>
-                <option value="Group II">Group II</option>
-              </select>
-            </div>
+            {filters.examStage === 'Foundation' && (
+              <div className="filter-group">
+                <label>Filter by Paper No.:</label>
+                <select
+                  value={filters.paperNo}
+                  onChange={(e) => setFilters({ ...filters, paperNo: e.target.value })}
+                >
+                  <option value="">All</option>
+                  <option value="Paper 1">Paper 1</option>
+                  <option value="Paper 2">Paper 2</option>
+                  <option value="Paper 3">Paper 3</option>
+                  <option value="Paper 4">Paper 4</option>
+                </select>
+              </div>
+            )}
             <div className="filter-group">
               <label>Filter by Question No.:</label>
               <select
@@ -197,10 +272,7 @@ const Questions = () => {
                 {currentQuestions.map((question) => (
                   <div key={question.id} className="question-card">
                     <h2>
-                      {question.subject} - {question.examType} ({question.year})
-                      {question.month && `, ${question.month}`}
-                      {question.group && `, ${question.group}`}
-                      {question.paperName && `, ${question.paperName}`}
+                      {question.subject} - {question.month}, {question.year}
                     </h2>
                     {question.questionNumber && (
                       <p><strong>Question Number:</strong> {question.questionNumber}</p>

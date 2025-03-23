@@ -7,21 +7,51 @@ const Joi = require('joi');
 const questionSchema = Joi.object({
   subject: Joi.string()
     .required()
-    .valid(
-      'Advanced Accounting',
-      'Corporate Laws',
-      'Taxation',
-      'Cost & Management',
-      'Auditing',
-      'Financial Management'
-    ),
-  examType: Joi.string().required().valid('MTP', 'RTP'),
+    .when('examStage', {
+      is: 'Foundation',
+      then: Joi.string().valid(
+        'Principles and Practices of Accounting',
+        'Business Law',
+        'Business Correspondence and Reporting',
+        'Business Mathematics',
+        'Logical Reasoning',
+        'Statistics',
+        'Business Economics',
+        'Business and Commercial Knowledge'
+      ),
+      otherwise: Joi.string().when('examStage', {
+        is: 'Intermediate',
+        then: Joi.string().valid(
+          'Advanced Accounting',
+          'Corporate Laws',
+          'Cost and Management Accounting',
+          'Taxation',
+          'Auditing and Code of Ethics',
+          'Financial and Strategic Management'
+        ),
+        otherwise: Joi.string().valid(
+          'Financial Reporting',
+          'Advanced Financial Management',
+          'Advanced Auditing',
+          'Direct and International Tax Laws',
+          'Indirect Tax Laws',
+          'Integrated Business Solutions'
+        )
+      })
+    }),
+  paperType: Joi.string().required().valid('MTP', 'RTP', 'PYQS'),
   year: Joi.string().required().valid('2024', '2023', '2022'),
-  month: Joi.string().required().valid('March', 'February'),
-  group: Joi.string().required().valid('Group I', 'Group II'),
-  paperName: Joi.string()
-    .required()
-    .valid('Paper 01', 'Paper 02', 'Paper 03', 'Paper 04', 'Paper 05', 'Paper 06'),
+  month: Joi.string().required().valid(
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ),
+  examStage: Joi.string().required().valid('Foundation', 'Intermediate', 'Final'),
+  paperNo: Joi.string()
+    .when('examStage', {
+      is: 'Foundation',
+      then: Joi.string().required().valid('Paper 1', 'Paper 2', 'Paper 3', 'Paper 4'),
+      otherwise: Joi.string().optional().allow('')
+    }),
   questionNumber: Joi.string().required(),
   questionText: Joi.string().required(),
   answerText: Joi.string().allow('').optional(),
@@ -53,11 +83,11 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const {
       subject,
-      examType,
+      paperType,
       year,
       month,
-      group,
-      paperName,
+      examStage,
+      paperNo,
       questionNumber,
       questionText,
       answerText,
@@ -67,11 +97,11 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const dataToValidate = {
       subject,
-      examType,
+      paperType,
       year,
       month,
-      group,
-      paperName,
+      examStage,
+      paperNo,
       questionNumber,
       questionText,
       answerText: answerText || '',
@@ -89,11 +119,11 @@ router.post('/', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const questionData = {
       subject,
-      examType,
+      paperType,
       year,
       month,
-      group,
-      paperName,
+      examStage,
+      paperNo,
       questionNumber,
       questionText,
       answerText: answerText || '',
@@ -117,11 +147,11 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const {
       subject,
-      examType,
+      paperType,
       year,
       month,
-      group,
-      paperName,
+      examStage,
+      paperNo,
       questionNumber,
       questionText,
       answerText,
@@ -134,11 +164,11 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const dataToValidate = {
       subject: subject || question.subject,
-      examType: examType || question.examType,
+      paperType: paperType || question.paperType,
       year: year || question.year,
       month: month || question.month,
-      group: group || question.group,
-      paperName: paperName || question.paperName,
+      examStage: examStage || question.examStage,
+      paperNo: paperNo || question.paperNo,
       questionNumber: questionNumber || question.questionNumber,
       questionText: questionText || question.questionText,
       answerText: answerText || question.answerText || '',
@@ -154,11 +184,11 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
     const updatedData = {
       subject: dataToValidate.subject,
-      examType: dataToValidate.examType,
+      paperType: dataToValidate.paperType,
       year: dataToValidate.year,
       month: dataToValidate.month,
-      group: dataToValidate.group,
-      paperName: dataToValidate.paperName,
+      examStage: dataToValidate.examStage,
+      paperNo: dataToValidate.paperNo,
       questionNumber: dataToValidate.questionNumber,
       questionText: dataToValidate.questionText,
       answerText: dataToValidate.answerText,
@@ -177,11 +207,22 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 
 router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { subject, year, questionNumber } = req.query;
+    const { subject, year, questionNumber, paperType, month, examStage, paperNo, search } = req.query;
     const where = {};
     if (subject) where.subject = subject;
     if (year) where.year = year;
     if (questionNumber) where.questionNumber = questionNumber;
+    if (paperType) where.paperType = paperType;
+    if (month) where.month = month;
+    if (examStage) where.examStage = examStage;
+    if (paperNo) where.paperNo = paperNo;
+    
+    // Handle search keyword (case-insensitive)
+    if (search) {
+      where.questionText = {
+        [sequelize.Op.like]: `%${search}%`
+      };
+    }
 
     const questions = await Question.findAll({ where });
     res.json(questions);

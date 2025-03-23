@@ -20,11 +20,11 @@ const PreviewPanel = ({ data, onClose }) => {
         <h2 className="preview-title">Preview</h2>
         <div className="preview-content">
           <p><strong>Subject:</strong> {data.subject || 'N/A'}</p>
-          <p><strong>Exam Type:</strong> {data.examType || 'N/A'}</p>
+          <p><strong>Exam Stage:</strong> {data.examStage || 'N/A'}</p>
+          <p><strong>Paper Type:</strong> {data.paperType || 'N/A'}</p>
           <p><strong>Year:</strong> {data.year || 'N/A'}</p>
           <p><strong>Month:</strong> {data.month || 'N/A'}</p>
-          <p><strong>Group:</strong> {data.group || 'N/A'}</p>
-          <p><strong>Paper Name:</strong> {data.paperName || 'N/A'}</p>
+          <p><strong>Paper No.:</strong> {data.paperNo || 'N/A'}</p>
           <p><strong>Question Number:</strong> {data.questionNumber || 'N/A'}</p>
 
           <h3 className="preview-subtitle">Question Text:</h3>
