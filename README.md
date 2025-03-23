@@ -19,6 +19,7 @@ npm install react-pdf
 npm install aos
 npm install axios
 npm install framer-motion react-spring aos
+npm install jspdf --legacy-peer-deps
 
 # backend
 npm init -y

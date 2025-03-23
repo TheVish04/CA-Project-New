@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 import Navbar from './Navbar';
 import PreviewPanel from './PreviewPanel'; // We'll keep this import for now
+import { generateQuestionsPDF, savePDF } from '../utils/pdfGenerator';
 import './Questions.css';
 
 const Questions = () => {
@@ -99,6 +100,20 @@ const Questions = () => {
       ...prev,
       [questionId]: !prev[questionId]
     }));
+  };
+  
+  // Handle PDF export
+  const handleExportPDF = () => {
+    if (filteredQuestions.length === 0) {
+      alert('No questions to export. Please adjust your filters.');
+      return;
+    }
+    
+    // Generate the PDF document
+    const doc = generateQuestionsPDF(filteredQuestions, filters, showAnswers, individualShowAnswers);
+    
+    // Save the PDF
+    savePDF(doc);
   };
 
   // We'll modify the rendering of question cards to remove the preview button
@@ -271,6 +286,17 @@ const Questions = () => {
                 />
                 Show Answers
               </label>
+            </div>
+            
+            {/* Export PDF Button */}
+            <div className="filter-group export-pdf">
+              <button 
+                className="export-pdf-btn" 
+                onClick={handleExportPDF}
+                title="Export filtered questions to PDF"
+              >
+                Export to PDF
+              </button>
             </div>
           </div>
 

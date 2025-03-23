@@ -73,7 +73,39 @@
     border-color: #00b4d8;
   }
   
-  .filter-group input[type="checkbox"] {
+  .export-pdf {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.export-pdf-btn {
+  padding: 10px 20px;
+  background: #1a2a44;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.export-pdf-btn:hover {
+  background: #2c3e50;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.export-pdf-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.filter-group input[type="checkbox"] {
     margin-right: 5px;
   }
 
