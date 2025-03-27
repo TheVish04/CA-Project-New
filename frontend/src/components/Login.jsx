@@ -25,7 +25,12 @@ const Login = () => {
       const { token } = response.data;
 
       localStorage.setItem('token', token);
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      // Safely decode JWT token
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+      const payload = JSON.parse(atob(parts[1]));
       const role = payload.role;
 
       if (role === 'admin') {

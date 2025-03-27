@@ -15,10 +15,18 @@ const Navbar = () => {
     if (token) {
       setIsLoggedIn(true);
       try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
+        // Safely decode JWT token
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+          throw new Error('Invalid token format');
+        }
+        const payload = JSON.parse(atob(parts[1]));
         setIsAdmin(payload.role === 'admin');
       } catch (error) {
         console.error('Error decoding token:', error);
+        localStorage.removeItem('token'); // Clear invalid token
+        setIsLoggedIn(false);
+        setIsAdmin(false);
       }
     } else {
       setIsLoggedIn(false);

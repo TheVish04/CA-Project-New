@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Sequelize = require('sequelize');
-const User = require('../models/User');
+const User = require('../models/UserModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { authMiddleware } = require('../middleware/authMiddleware');
@@ -22,9 +21,7 @@ router.post('/send-otp', async (req, res) => {
     }
     
     // Check if email already exists
-    const existingUser = await User.findOne({
-      where: { email: email.trim().toLowerCase() }
-    });
+    const existingUser = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (existingUser) {
       return res.status(409).json({
@@ -103,9 +100,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Find user by email only
-    const user = await User.findOne({
-      where: { email: email.trim().toLowerCase() }
-    });
+    const user = await User.findOne({ email: email.trim().toLowerCase() });
 
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -173,9 +168,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check existing user
-    const existingUser = await User.findOne({
-      where: { email: sanitizedEmail }
-    });
+    const existingUser = await User.findOne({ email: sanitizedEmail });
 
     if (existingUser) {
       return res.status(409).json({  // Proper conflict status
@@ -221,9 +214,7 @@ if (!req.user?.id) {
 return res.status(401).json({ error: 'Invalid authentication' });
 }
 
-const user = await User.findByPk(req.user.id, {
-attributes: ['id', 'fullName', 'email', 'role', 'createdAt'] // Add createdAt
-});
+const user = await User.findById(req.user.id).select('id fullName email role createdAt');
 
 if (!user) {
 return res.status(404).json({ error: 'User not found' });

@@ -379,7 +379,7 @@ const Questions = () => {
         </div>
       </div>
       
-      {/* Keep the PreviewPanel component for now, but it won't be used */}
+      {/* PreviewPanel component is still available if needed in the future */}
       {previewOpen && selectedQuestion && (
         <PreviewPanel data={selectedQuestion} onClose={handleClosePreview} />
       )}

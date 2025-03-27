@@ -73,10 +73,7 @@ const PreviewPanel = ({ data, onClose }) => {
             </div>
           )}
 
-          {/* Debugging: Display raw data */}
-          <pre className="preview-debug">
-            {JSON.stringify(data, null, 2)}
-          </pre>
+          {/* Preview content ends here */}
         </div>
 
         <button

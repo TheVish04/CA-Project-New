@@ -1,7 +1,7 @@
 const express = require('express');
-const sequelize = require('./config/database');
-const User = require('./models/User');
-const Question = require('./models/Question');
+const connectDB = require('./config/database');
+const User = require('./models/UserModel');
+const Question = require('./models/QuestionModel');
 const authRoutes = require('./routes/auth');
 const questionRoutes = require('./routes/questions');
 const { authMiddleware, adminMiddleware } = require('./middleware/authMiddleware');
@@ -10,6 +10,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config();
 const bcrypt = require('bcrypt');
+const mongoose = require('mongoose');
 
 const app = express();
 
@@ -45,14 +46,14 @@ app.use(cors(corsOptions));
 // Initialize database and models before setting up routes
 const initializeDatabase = async () => {
   try {
-    // Test the Sequelize connection
-    await sequelize.authenticate();
+    // Connect to MongoDB
+    const conn = await connectDB();
     console.log('Database connection established successfully');
 
     // Verify User model
     if (!User) {
       console.error('User model is undefined. Import path or file issue:', {
-        filePath: './models/User',
+        filePath: './models/UserModel',
         cwd: process.cwd(),
       });
       throw new Error('User model not loaded');
@@ -61,12 +62,12 @@ const initializeDatabase = async () => {
       console.error('User model lacks findOne method:', User);
       throw new Error('User model not initialized');
     }
-    console.log('User model loaded successfully:', User);
+    console.log('User model loaded successfully');
 
     // Verify Question model
     if (!Question) {
       console.error('Question model is undefined. Import path or file issue:', {
-        filePath: './models/Question',
+        filePath: './models/QuestionModel',
         cwd: process.cwd(),
       });
       throw new Error('Question model not loaded');
@@ -75,25 +76,17 @@ const initializeDatabase = async () => {
       console.error('Question model lacks findOne method:', Question);
       throw new Error('Question model not initialized');
     }
-    console.log('Question model loaded successfully:', Question);
-
-    // Sync database without dropping tables, with logging
-    await sequelize.sync({ force: false, logging: (msg) => console.log('Database sync:', msg) });
-    console.log('Database synced successfully (force: false)');
-
-    // Verify database connection by fetching table info
-    const tables = await sequelize.getQueryInterface().showAllTables();
-    console.log('Tables in database:', tables);
+    console.log('Question model loaded successfully');
 
     // Check if an admin user exists, create one if not
     await checkAndCreateAdmin();
 
     // Log total number of users for debugging
-    const userCount = await User.count();
+    const userCount = await User.countDocuments();
     console.log(`Total users in database: ${userCount}`);
 
     // Log total number of questions for debugging
-    const questionCount = await Question.count();
+    const questionCount = await Question.countDocuments();
     console.log(`Total questions in database: ${questionCount}`);
 
     // Set up routes after successful initialization
@@ -111,9 +104,7 @@ const initializeDatabase = async () => {
 // Separate function to check and create admin user
 const checkAndCreateAdmin = async () => {
   try {
-    const adminCount = await User.count({ 
-      where: { role: 'admin' } 
-    });
+    const adminCount = await User.countDocuments({ role: 'admin' });
 
     if (adminCount === 0) {
       // Validate admin credentials from env
@@ -141,7 +132,7 @@ const checkAndCreateAdmin = async () => {
       });
     } else {
       console.log('Admin user already exists, skipping creation.');
-      const existingAdmin = await User.findOne({ where: { role: 'admin' } });
+      const existingAdmin = await User.findOne({ role: 'admin' });
       console.log('Existing admin details:', {
         fullName: existingAdmin.fullName,
         email: existingAdmin.email,
@@ -164,7 +155,7 @@ app.get('/health', (req, res) => {
   const health = {
     status: 'OK',
     timestamp: new Date().toISOString(),
-    dbConnected: sequelize.connectionManager.hasActiveConnection(),
+    dbConnected: mongoose.connection.readyState === 1, // 1 = connected
     uptime: process.uptime(),
     memoryUsage: process.memoryUsage(),
   };

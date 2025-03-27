@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { authMiddleware, adminMiddleware } = require('../middleware/authMiddleware');
-const Question = require('../models/Question'); // Changed from const { Question } = require('../models/Question');
+const Question = require('../models/QuestionModel');
 const Joi = require('joi');
 
 const questionSchema = Joi.object({
@@ -159,7 +159,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       subQuestions,
     } = req.body;
 
-    const question = await Question.findByPk(id);
+    const question = await Question.findById(id);
     if (!question) return res.status(404).json({ error: 'Question not found' });
 
     const dataToValidate = {
@@ -196,7 +196,7 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
       subQuestions: dataToValidate.subQuestions,
     };
 
-    await question.update(updatedData);
+    await Question.findByIdAndUpdate(id, updatedData, { new: true });
     console.log('Question updated successfully for ID:', id);
     res.json({ message: 'Question updated successfully', id, ...updatedData });
   } catch (error) {
@@ -208,23 +208,24 @@ router.put('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
 router.get('/', authMiddleware, async (req, res) => {
   try {
     const { subject, year, questionNumber, paperType, month, examStage, paperNo, search } = req.query;
-    const where = {};
-    if (subject) where.subject = subject;
-    if (year) where.year = year;
-    if (questionNumber) where.questionNumber = questionNumber;
-    if (paperType) where.paperType = paperType;
-    if (month) where.month = month;
-    if (examStage) where.examStage = examStage;
-    if (paperNo) where.paperNo = paperNo;
+    const filter = {};
+    if (subject) filter.subject = subject;
+    if (year) filter.year = year;
+    if (questionNumber) filter.questionNumber = questionNumber;
+    if (paperType) filter.paperType = paperType;
+    if (month) filter.month = month;
+    if (examStage) filter.examStage = examStage;
+    if (paperNo) filter.paperNo = paperNo;
     
     // Handle search keyword (case-insensitive)
     if (search) {
-      where.questionText = {
-        [sequelize.Op.like]: `%${search}%`
+      filter.questionText = {
+        $regex: search,
+        $options: 'i'
       };
     }
 
-    const questions = await Question.findAll({ where });
+    const questions = await Question.find(filter);
     res.json(questions);
   } catch (error) {
     console.error('Error fetching questions:', error);
@@ -235,14 +236,14 @@ router.get('/', authMiddleware, async (req, res) => {
 router.delete('/:id', [authMiddleware, adminMiddleware], async (req, res) => {
   try {
     const { id } = req.params;
-    const question = await Question.findByPk(id);
+    const question = await Question.findById(id);
     if (!question) return res.status(404).json({ error: 'Question not found' });
-
-    await question.destroy();
+    
+    await Question.findByIdAndDelete(id);
     res.json({ message: 'Question deleted successfully' });
   } catch (error) {
     console.error('Error deleting question:', error);
-    res.status(500).json({ error: `Failed to delete question: ${error.message}` });
+    res.status(500).json({ error: 'Failed to delete question' });
   }
 });
 

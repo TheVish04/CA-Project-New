@@ -14,14 +14,18 @@ const ProtectedRoute = ({ element, requireAdmin = false }) => {
 
   if (token) {
     try {
-      // In ProtectedRoute component:
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      // Safely decode JWT token
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        throw new Error('Invalid token format');
+      }
+      const payload = JSON.parse(atob(parts[1]));
       if (payload.role === 'admin') {
         isAdmin = true;
       }
-      // Remove username parsing
     } catch (error) {
       console.error('Error decoding token:', error);
+      localStorage.removeItem('token'); // Clear invalid token
     }
   }
 
