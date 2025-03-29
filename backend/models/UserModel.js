@@ -41,7 +41,6 @@ const UserSchema = new Schema({
   timestamps: true
 });
 
-// Add index for email lookup
-UserSchema.index({ email: 1 });
+// Removed duplicate index - already defined in schema with unique: true
 
 module.exports = mongoose.model('User', UserSchema);
