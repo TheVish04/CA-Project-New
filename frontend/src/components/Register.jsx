@@ -70,7 +70,18 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post('https://ca-project-new.onrender.com/api/auth/send-otp', { email: email.trim() });
+      // Use API URL from environment or default to render URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://ca-project-new.onrender.com';
+      
+      // Add a timeout to the axios request to handle slow server responses
+      const response = await axios.post(
+        `${apiUrl}/api/auth/send-otp`, 
+        { email: email.trim() },
+        { 
+          timeout: 15000, // 15 second timeout
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
       
       setOtpSent(true);
       setCountdown(60); // 60 seconds countdown for resend
@@ -108,7 +119,10 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post('https://ca-project-new.onrender.com/api/auth/verify-otp', { 
+      // Use API URL from environment or default to render URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://ca-project-new.onrender.com';
+      
+      const response = await axios.post(`${apiUrl}/api/auth/verify-otp`, { 
         email: email.trim(),
         otp: otp.trim() 
       });
@@ -239,6 +253,9 @@ const Register = () => {
     setIsSubmitting(true);
     
     try {
+      // Use API URL from environment or default to render URL
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://ca-project-new.onrender.com';
+      
       // Send verified email along with registration data
       const dataToSend = {
         fullName: formData.fullName.trim(),
@@ -247,7 +264,7 @@ const Register = () => {
         verifiedEmail: email.trim() // Include verified email for backend validation
       };
       
-      await axios.post('https://ca-project-new.onrender.com/api/auth/register', dataToSend);
+      await axios.post(`${apiUrl}/api/auth/register`, dataToSend);
       
       // Registration successful
       navigate('/login');
