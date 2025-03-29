@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { motion } from 'framer-motion';
 import Navbar from './Navbar';
+import apiUtils from '../utils/apiUtils';
 import './Register.css';
 
 const Register = () => {
@@ -70,18 +71,9 @@ const Register = () => {
     setOtpError('');
     
     try {
-      // Use API URL from environment or default to render URL
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://ca-project-new.onrender.com';
+      const response = await apiUtils.post('api/auth/send-otp', { email: email.trim() });
       
-      // Add a timeout to the axios request to handle slow server responses
-      const response = await axios.post(
-        `${apiUrl}/api/auth/send-otp`, 
-        { email: email.trim() },
-        { 
-          timeout: 15000, // 15 second timeout
-          headers: { 'Content-Type': 'application/json' }
-        }
-      );
+      console.log("OTP send response:", response.data);
       
       setOtpSent(true);
       setCountdown(60); // 60 seconds countdown for resend
@@ -91,17 +83,13 @@ const Register = () => {
     } catch (err) {
       console.error('Error sending OTP:', err);
       
-      if (err.response?.data?.error) {
-        setOtpError(err.response.data.error);
-        
-        // If email already registered, suggest login
-        if (err.response.data.redirect === '/login') {
-          setTimeout(() => {
-            navigate('/login');
-          }, 3000);
-        }
-      } else {
-        setOtpError('Failed to send OTP. Please try again.');
+      setOtpError(err.message || 'Failed to send OTP. Please try again later.');
+      
+      // If email already registered, suggest login
+      if (err.redirect === '/login') {
+        setTimeout(() => {
+          navigate('/login');
+        }, 3000);
       }
     } finally {
       setSendingOtp(false);
@@ -119,13 +107,12 @@ const Register = () => {
     setOtpError('');
     
     try {
-      // Use API URL from environment or default to render URL
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://ca-project-new.onrender.com';
-      
-      const response = await axios.post(`${apiUrl}/api/auth/verify-otp`, { 
+      const response = await apiUtils.post('api/auth/verify-otp', { 
         email: email.trim(),
         otp: otp.trim() 
       });
+      
+      console.log("OTP verification response:", response.data);
       
       setOtpVerified(true);
       
@@ -135,12 +122,7 @@ const Register = () => {
       
     } catch (err) {
       console.error('Error verifying OTP:', err);
-      
-      if (err.response?.data?.error) {
-        setOtpError(err.response.data.error);
-      } else {
-        setOtpError('Failed to verify OTP. Please try again.');
-      }
+      setOtpError(err.message || 'Failed to verify OTP. Please try again later.');
     } finally {
       setVerifyingOtp(false);
     }
@@ -253,9 +235,6 @@ const Register = () => {
     setIsSubmitting(true);
     
     try {
-      // Use API URL from environment or default to render URL
-      const apiUrl = import.meta.env.VITE_API_URL || 'https://ca-project-new.onrender.com';
-      
       // Send verified email along with registration data
       const dataToSend = {
         fullName: formData.fullName.trim(),
@@ -264,22 +243,18 @@ const Register = () => {
         verifiedEmail: email.trim() // Include verified email for backend validation
       };
       
-      await axios.post(`${apiUrl}/api/auth/register`, dataToSend);
+      await apiUtils.post('api/auth/register', dataToSend);
       
       // Registration successful
       navigate('/login');
     } catch (err) {
       console.error('Registration error:', err);
       
-      if (err.response && err.response.data && err.response.data.error) {
-        setError(err.response.data.error);
-        
-        // If email verification required, go back to step 1
-        if (err.response.data.redirect === '/register') {
-          setStep(1);
-        }
-      } else {
-        setError('Registration failed. Please try again.');
+      setError(err.message || 'Registration failed. Please try again later.');
+      
+      // If email verification required, go back to step 1
+      if (err.redirect === '/register') {
+        setStep(1);
       }
     } finally {
       setIsSubmitting(false);

@@ -43,19 +43,9 @@ app.use(express.json({ limit: '10mb' }));
 
 // Enhanced CORS configuration
 const corsOptions = {
-  origin: (origin, callback) => {
-    const allowedOrigins = process.env.CORS_ORIGIN
-      ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
-      : ['http://localhost:5173'];
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: '*', // Allow all origins during testing
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin', 'AccessToken'],
   exposedHeaders: ['Access-Control-Allow-Origin'],
   credentials: true,
   optionsSuccessStatus: 200,
