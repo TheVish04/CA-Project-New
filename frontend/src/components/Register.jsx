@@ -70,7 +70,7 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/send-otp', { email: email.trim() });
+      const response = await axios.post('https://ca-project-new.onrender.com/api/auth/send-otp', { email: email.trim() });
       
       setOtpSent(true);
       setCountdown(60); // 60 seconds countdown for resend
@@ -108,7 +108,7 @@ const Register = () => {
     setOtpError('');
     
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/verify-otp', { 
+      const response = await axios.post('https://ca-project-new.onrender.com/api/auth/verify-otp', { 
         email: email.trim(),
         otp: otp.trim() 
       });
@@ -247,7 +247,7 @@ const Register = () => {
         verifiedEmail: email.trim() // Include verified email for backend validation
       };
       
-      await axios.post('http://localhost:5000/api/auth/register', dataToSend);
+      await axios.post('https://ca-project-new.onrender.com/api/auth/register', dataToSend);
       
       // Registration successful
       navigate('/login');

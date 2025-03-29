@@ -56,7 +56,7 @@ const AdminPanel = () => {
   // Modified fetchQuestions with pagination (if needed) and applying all filters
   const fetchQuestions = async (token, query = '') => {
     try {
-      const response = await fetch(`http://localhost:5000/api/questions${query ? `?${query}` : ''}`, {
+      const response = await fetch(`https://ca-project-new.onrender.com/api/questions${query ? `?${query}` : ''}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -303,7 +303,7 @@ const AdminPanel = () => {
     console.log('Sanitized Data:', sanitizedData);
 
     try {
-      const response = await fetch('http://localhost:5000/api/questions', {
+      const response = await fetch('https://ca-project-new.onrender.com/api/questions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -356,7 +356,7 @@ const AdminPanel = () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5000/api/questions/${editingQuestionId}`, {
+      const response = await fetch(`https://ca-project-new.onrender.com/api/questions/${editingQuestionId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -405,7 +405,7 @@ const AdminPanel = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const response = await fetch(`http://localhost:5000/api/questions/${id}`, {
+      const response = await fetch(`https://ca-project-new.onrender.com/api/questions/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
