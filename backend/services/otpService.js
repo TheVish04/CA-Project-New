@@ -1,9 +1,22 @@
 const otpGenerator = require('otp-generator');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 require('dotenv').config();
 
-// In-memory OTP storage (in production, use Redis or a database)
+// Enhanced in-memory OTP storage with rate limiting and cleanup
+// For production, use Redis or a database
 const otpStore = new Map();
+const rateLimit = new Map(); // Store attempt counts per email
+
+// Regularly clean up expired OTPs to prevent memory leaks
+setInterval(() => {
+  const now = Date.now();
+  for (const [email, data] of otpStore.entries()) {
+    if (now > data.expiresAt) {
+      otpStore.delete(email);
+    }
+  }
+}, 60000); // Clean up every minute
 
 // Configure nodemailer
 const transporter = nodemailer.createTransport({
@@ -16,17 +29,38 @@ const transporter = nodemailer.createTransport({
 
 // Generate OTP and store it
 const generateOTP = (email) => {
-  // Generate a 6-digit OTP
+  // Check if rate limit exceeded (max 3 OTPs in 15 minutes)
+  const now = Date.now();
+  const recentAttempts = rateLimit.get(email) || [];
+  
+  // Remove attempts older than 15 minutes
+  const recentValidAttempts = recentAttempts.filter(
+    timestamp => now - timestamp < 15 * 60 * 1000
+  );
+  
+  if (recentValidAttempts.length >= 3) {
+    throw new Error('Rate limit exceeded. Please try again in 15 minutes.');
+  }
+  
+  // Add current attempt and update rate limit
+  recentValidAttempts.push(now);
+  rateLimit.set(email, recentValidAttempts);
+  
+  // Generate a secure 6-digit OTP
   const otp = otpGenerator.generate(6, { 
     upperCaseAlphabets: false,
     lowerCaseAlphabets: false,
     specialChars: false
   });
   
+  // Hash the OTP for storage (don't store in plain text)
+  const hashedOTP = crypto.createHash('sha256').update(otp).digest('hex');
+  
   // Store OTP with expiry time (5 minutes)
   otpStore.set(email, {
-    otp,
-    expiresAt: Date.now() + 5 * 60 * 1000 // 5 minutes
+    hashedOTP,
+    expiresAt: now + 5 * 60 * 1000, // 5 minutes
+    attempts: 0 // Track failed verification attempts
   });
   
   return otp;
@@ -45,12 +79,33 @@ const verifyOTP = (email, otp) => {
     return { valid: false, message: 'OTP has expired. Please request a new OTP.' };
   }
   
-  if (otpData.otp !== otp) {
+  // Limit attempts to prevent brute force (max 5 attempts)
+  if (otpData.attempts >= 5) {
+    otpStore.delete(email); // Invalidate after too many attempts
+    return { valid: false, message: 'Too many failed attempts. Please request a new OTP.' };
+  }
+  
+  // Hash the user-provided OTP to compare
+  const hashedInputOTP = crypto.createHash('sha256').update(otp).digest('hex');
+  
+  if (otpData.hashedOTP !== hashedInputOTP) {
+    // Increment failed attempts
+    otpData.attempts += 1;
+    otpStore.set(email, otpData);
     return { valid: false, message: 'Invalid OTP. Please try again.' };
   }
   
   // OTP is valid, clean up
   otpStore.delete(email);
+  
+  // Also remove from rate limit after successful verification
+  const recentAttempts = rateLimit.get(email) || [];
+  if (recentAttempts.length <= 1) {
+    rateLimit.delete(email);
+  } else {
+    rateLimit.set(email, recentAttempts.slice(0, -1));
+  }
+  
   return { valid: true, message: 'OTP verified successfully.' };
 };
 

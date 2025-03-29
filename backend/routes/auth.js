@@ -7,6 +7,46 @@ const { authMiddleware } = require('../middleware/authMiddleware');
 const { generateOTP, verifyOTP, sendOTPEmail } = require('../services/otpService');
 require('dotenv').config();
 
+// Rate limiting for login attempts
+const loginAttempts = new Map();
+
+// Cleanup expired login attempts every 15 minutes
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, data] of loginAttempts.entries()) {
+    if (now > data.resetTime) {
+      loginAttempts.delete(key);
+    }
+  }
+}, 15 * 60 * 1000);
+
+// Helper function to track login attempts
+function updateLoginAttempts(key, success) {
+  const now = Date.now();
+  const data = loginAttempts.get(key) || { 
+    attempts: 0, 
+    resetTime: now + 15 * 60 * 1000, // Reset after 15 minutes
+    blocked: false
+  };
+  
+  if (success) {
+    // On successful login, reset attempts
+    loginAttempts.delete(key);
+    return;
+  }
+  
+  // Increment failed attempts
+  data.attempts += 1;
+  
+  // Block after 5 failed attempts
+  if (data.attempts >= 5) {
+    data.blocked = true;
+    data.resetTime = now + 15 * 60 * 1000; // Block for 15 minutes
+  }
+  
+  loginAttempts.set(key, data);
+}
+
 // Send OTP for registration
 router.post('/send-otp', async (req, res) => {
   try {
@@ -99,20 +139,44 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    // Find user by email only
+    // Implement rate limiting
+    const clientIP = req.ip || 'unknown';
+    const loginKey = `${email.toLowerCase()}:${clientIP}`;
+    const now = Date.now();
+    
+    // Check if this IP+email combo is already blocked
+    const attemptData = loginAttempts.get(loginKey);
+    if (attemptData && attemptData.blocked && now < attemptData.resetTime) {
+      const waitMinutes = Math.ceil((attemptData.resetTime - now) / (60 * 1000));
+      return res.status(429).json({ 
+        error: `Too many failed login attempts. Please try again in ${waitMinutes} minutes.`
+      });
+    }
+
+    // Find user by email
     const user = await User.findOne({ email: email.trim().toLowerCase() });
 
+    // Add small delay to prevent timing attacks
+    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 100));
+
     if (!user) {
+      // Update failed attempts for this IP and email combination
+      updateLoginAttempts(loginKey, false);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     // Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
+      // Update failed attempts counter
+      updateLoginAttempts(loginKey, false);
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Create JWT token (moved inside the route handler)
+    // Reset failed attempts on successful login
+    updateLoginAttempts(loginKey, true);
+
+    // Create JWT token
     const token = jwt.sign(
       { id: user.id, role: user.role, fullName: user.fullName },
       process.env.JWT_SECRET,
@@ -159,10 +223,26 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Password validation
-    if (!password || password.length < 8) {
+    // Enhanced password validation
+    if (!password) {
       return res.status(400).json({
-        error: 'Password must be at least 8 characters',
+        error: 'Password is required',
+        field: 'password'
+      });
+    }
+    
+    if (password.length < 8) {
+      return res.status(400).json({
+        error: 'Password must be at least 8 characters long',
+        field: 'password'
+      });
+    }
+    
+    // Check password strength (at least 1 uppercase, 1 lowercase, 1 number)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/;
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({
+        error: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
         field: 'password'
       });
     }

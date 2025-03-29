@@ -11,6 +11,10 @@ const fs = require('fs');
 require('dotenv').config();
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const mongoSanitize = require('express-mongo-sanitize');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 
@@ -20,6 +24,19 @@ if (!fs.existsSync(dbFolder)) {
   console.log('Creating database folder:', dbFolder);
   fs.mkdirSync(dbFolder, { recursive: true });
 }
+
+// Security middleware
+app.use(helmet()); // Set security headers
+app.use(xss()); // Sanitize user input
+app.use(mongoSanitize()); // Prevent MongoDB operator injection
+
+// Global rate limiter - max 100 requests per IP per 15 minutes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later'
+});
+app.use('/api/', apiLimiter);
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
@@ -115,8 +132,8 @@ const checkAndCreateAdmin = async () => {
       if (!adminEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminEmail)) {
         throw new Error('Invalid admin email format');
       }
-      if (!adminPassword || adminPassword.length < 6) {
-        throw new Error('Admin password must be at least 6 characters long');
+      if (!adminPassword || adminPassword.length < 8) {
+        throw new Error('Admin password must be at least 8 characters long');
       }
 
       const admin = await User.create({
@@ -147,7 +164,12 @@ const checkAndCreateAdmin = async () => {
 
 // Example protected admin route
 app.get('/api/admin', authMiddleware, adminMiddleware, (req, res) => {
-  res.json({ message: 'Welcome to the admin panel', user: req.user.username, role: req.user.role });
+  res.json({ 
+    message: 'Welcome to the admin panel', 
+    user: req.user.fullName, 
+    email: req.user.email,
+    role: req.user.role 
+  });
 });
 
 // Health check endpoint with detailed status
@@ -173,7 +195,7 @@ app.use((err, req, res, next) => {
   });
   res.status(err.status || 500).json({
     error: 'Something went wrong!',
-    message: err.message || 'Internal server error',
+    message: process.env.NODE_ENV === 'production' ? 'Server error' : err.message,
   });
 });
 
