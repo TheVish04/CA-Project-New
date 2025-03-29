@@ -50,6 +50,12 @@ function updateLoginAttempts(key, success) {
 // Send OTP for registration
 router.post('/send-otp', async (req, res) => {
   try {
+    console.log('Received send-otp request:', {
+      body: req.body,
+      origin: req.headers.origin,
+      contentType: req.headers['content-type']
+    });
+    
     const { email } = req.body;
     
     // Validate email format and ensure it's a Gmail address
@@ -77,11 +83,17 @@ router.post('/send-otp', async (req, res) => {
     const emailResult = await sendOTPEmail(email, otp);
     
     if (!emailResult.success) {
+      console.error('Failed to send OTP email:', emailResult);
       return res.status(500).json({ 
         error: 'Failed to send OTP email',
         details: emailResult.error
       });
     }
+    
+    // Set CORS headers explicitly
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
     res.json({ 
       message: 'OTP sent successfully',
@@ -89,7 +101,10 @@ router.post('/send-otp', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Send OTP error:', error);
+    console.error('Send OTP error:', {
+      message: error.message, 
+      stack: error.stack
+    });
     res.status(500).json({ 
       error: 'Failed to send OTP',
       details: process.env.NODE_ENV === 'development' ? error.message : null

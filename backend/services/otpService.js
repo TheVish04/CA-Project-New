@@ -132,11 +132,21 @@ const sendOTPEmail = async (email, otp) => {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
-    return { success: true };
+    console.log(`Attempting to send OTP email to: ${email}`);
+    const info = await transporter.sendMail(mailOptions);
+    console.log(`Email sent successfully to ${email}. Message ID: ${info.messageId}`);
+    return { success: true, messageId: info.messageId };
   } catch (error) {
-    console.error('Error sending OTP email:', error);
-    return { success: false, error: error.message };
+    console.error('Error sending OTP email:', {
+      error: error.message,
+      stack: error.stack,
+      email: email
+    });
+    return { 
+      success: false, 
+      error: error.message,
+      transportError: error.code || 'UNKNOWN'
+    };
   }
 };
 
